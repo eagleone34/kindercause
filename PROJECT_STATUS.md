@@ -75,6 +75,14 @@ https://www.kindercause.com/api/auth/callback/google
 - **Events:** `checkout.session.completed`, `customer.subscription.deleted`, `invoice.paid`
 
 ### 📁 Database Tables (Supabase)
+
+#### NextAuth Schema (`next_auth.`) - REQUIRED for magic link auth
+- `next_auth.users` - Auth users
+- `next_auth.accounts` - OAuth provider accounts (Google)
+- `next_auth.sessions` - User sessions
+- `next_auth.verification_tokens` - Email magic link tokens
+
+#### Public Schema (`public.`)
 - `waitlist` - Landing page signups (first_name, daycare_name, email)
 - `organizations` - Daycare accounts
 - `fundraisers` - Events and campaigns
@@ -99,6 +107,10 @@ https://www.kindercause.com/api/auth/callback/google
 ## 🔄 Recent Changes
 
 ### December 15, 2025 (Latest)
+- **Fixed email magic link**: Added Supabase adapter for NextAuth (stores verification tokens)
+- Added `@auth/supabase-adapter` package
+- Created `002_nextauth_schema.sql` migration (next_auth schema with users, accounts, sessions, verification_tokens)
+- Changed session strategy from JWT to database (required for email magic links)
 - Added email magic link authentication (passwordless sign-in via Resend)
 - Updated sign-in page with email input + Google OAuth options
 - Created `/signin/verify` page (check your email)
