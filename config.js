@@ -24,9 +24,9 @@ const config = {
         // A friendly description of the plan, displayed on the pricing page. Tip: explain why this plan and not others
         description: "Perfect for small daycares running 2-4 fundraisers/year",
         // The price you want to display, the one user will be charged on Stripe.
-        price: 29,
+        price: 49,
         // If you have an anchor price (i.e. $29) that you want to display crossed out, put it here. Otherwise, leave it empty
-        priceAnchor: 49,
+        priceAnchor: 79,
         features: [
           { name: "Unlimited events & campaigns" },
           { name: "Contact management" },
@@ -42,8 +42,8 @@ const config = {
           process.env.STRIPE_GROWTH_PRICE_ID || "price_growth_placeholder",
         name: "Growth",
         description: "For growing daycares with more frequent fundraising",
-        price: 79,
-        priceAnchor: 99,
+        price: 99,
+        priceAnchor: 149,
         features: [
           { name: "Everything in Starter" },
           { name: "Volunteer shift management" },
@@ -79,7 +79,7 @@ const config = {
   },
   auth: {
     // REQUIRED — the path to log in users. It's use to protect private routes (like /dashboard). It's used in apiClient (/libs/api.js) upon 401 errors from our API
-    loginUrl: "/api/auth/signin",
+    loginUrl: "/signin",
     callbackUrl: "/dashboard",
   },
 };

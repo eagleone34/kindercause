@@ -6,10 +6,12 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =============================================================================
--- LEADS TABLE (Landing page signups)
+-- WAITLIST TABLE (Landing page signups)
 -- =============================================================================
-CREATE TABLE IF NOT EXISTS leads (
+CREATE TABLE IF NOT EXISTS waitlist (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  first_name TEXT NOT NULL,
+  daycare_name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

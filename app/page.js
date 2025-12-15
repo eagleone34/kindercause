@@ -1,10 +1,21 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import ButtonSignin from "@/components/ButtonSignin";
 import config from "@/config";
+import WaitlistModal from "@/components/WaitlistModal";
 
 export default function Page() {
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+
   return (
     <>
+      {/* Waitlist Modal */}
+      <WaitlistModal 
+        isOpen={isWaitlistOpen} 
+        onClose={() => setIsWaitlistOpen(false)} 
+      />
+
       {/* Header */}
       <header className="navbar bg-base-100 max-w-7xl mx-auto px-4">
         <div className="flex-1">
@@ -13,14 +24,16 @@ export default function Page() {
             <span className="text-xl font-bold text-primary">{config.appName}</span>
           </Link>
         </div>
-        <div className="flex-none gap-2">
+        <div className="flex-none flex items-center gap-2">
           <Link href="#pricing" className="btn btn-ghost btn-sm">
             Pricing
           </Link>
           <Link href="#features" className="btn btn-ghost btn-sm hidden sm:flex">
             Features
           </Link>
-          <ButtonSignin text="Login" />
+          <Link href="/signin" className="btn btn-ghost btn-sm">
+            Login
+          </Link>
         </div>
       </header>
 
@@ -44,28 +57,23 @@ export default function Page() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/api/auth/signin" className="btn btn-primary btn-lg">
-              Start Free Trial
+            <button 
+              onClick={() => setIsWaitlistOpen(true)}
+              className="btn btn-primary btn-lg"
+            >
+              Join Waitlist
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>
-            </Link>
-            <Link href="#demo" className="btn btn-outline btn-lg">
-              Watch Demo
+            </button>
+            <Link href="/signin" className="btn btn-outline btn-lg">
+              Sign In
             </Link>
           </div>
 
           <p className="text-sm text-base-content/50">
-            No credit card required • Free for 14 days • Cancel anytime
+            🚀 Launching Soon • Get early access pricing
           </p>
-
-          {/* Launch Badge */}
-          <div className="flex items-center gap-3 mt-8 bg-base-200 px-4 py-2 rounded-full">
-            <span className="text-lg">🚀</span>
-            <p className="text-sm text-base-content/70">
-              <span className="font-semibold">Launching Soon!</span> Join the waitlist for early access pricing
-            </p>
-          </div>
         </section>
 
         {/* Problem Section */}
@@ -204,7 +212,7 @@ export default function Page() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-              {config.stripe.plans.map((plan, index) => (
+              {config.stripe.plans.map((plan) => (
                 <div
                   key={plan.name}
                   className={`bg-base-100 rounded-box p-6 shadow ${
@@ -237,14 +245,14 @@ export default function Page() {
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    href="/api/auth/signin"
+                  <button
+                    onClick={() => setIsWaitlistOpen(true)}
                     className={`btn w-full ${
                       plan.isFeatured ? "btn-primary" : "btn-outline"
                     }`}
                   >
-                    Get Started
-                  </Link>
+                    Join Waitlist
+                  </button>
                 </div>
               ))}
             </div>
@@ -267,12 +275,15 @@ export default function Page() {
               Be among the first daycares to simplify their fundraising.
               Set up your first fundraiser in under 10 minutes.
             </p>
-            <Link href="/api/auth/signin" className="btn btn-primary btn-lg">
-              Start Your Free Trial
+            <button 
+              onClick={() => setIsWaitlistOpen(true)}
+              className="btn btn-primary btn-lg"
+            >
+              Join the Waitlist
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>
-            </Link>
+            </button>
           </div>
         </section>
       </main>

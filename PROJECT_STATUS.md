@@ -10,16 +10,17 @@
 ## 📊 Current Status: MVP Complete - Pre-Launch
 
 ### Pricing Tiers (2 plans)
-| Plan | Price | Transaction Fee |
-|------|-------|-----------------|
-| Starter | $29/month | 3% |
-| Growth | $79/month | 2% |
+| Plan | Price | Anchor Price | Transaction Fee |
+|------|-------|--------------|-----------------|
+| Starter | $49/month | $79 | 3% |
+| Growth | $99/month | $149 | 2% |
 
 ### ✅ Completed Features
 
 #### Core Platform
 - [x] Landing page with hero, features, pricing sections
-- [x] Google OAuth authentication
+- [x] Custom sign-in page (`/signin`) with Google OAuth
+- [x] Waitlist capture form (first name, daycare name, email)
 - [x] Dashboard layout with sidebar navigation
 - [x] Responsive design (mobile + desktop)
 
@@ -58,8 +59,8 @@ SUPABASE_SERVICE_ROLE_KEY=(from Supabase)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=(from Stripe)
 STRIPE_SECRET_KEY=(from Stripe)
 STRIPE_WEBHOOK_SECRET=(from Stripe)
-STRIPE_STARTER_PRICE_ID=(from Stripe)
-STRIPE_GROWTH_PRICE_ID=(from Stripe)
+STRIPE_STARTER_PRICE_ID=(from Stripe - $49/month)
+STRIPE_GROWTH_PRICE_ID=(from Stripe - $99/month)
 ```
 
 #### Google OAuth Redirect URIs
@@ -73,7 +74,7 @@ https://www.kindercause.com/api/auth/callback/google
 - **Events:** `checkout.session.completed`, `customer.subscription.deleted`, `invoice.paid`
 
 ### 📁 Database Tables (Supabase)
-- `leads` - Landing page signups
+- `waitlist` - Landing page signups (first_name, daycare_name, email)
 - `organizations` - Daycare accounts
 - `fundraisers` - Events and campaigns
 - `purchases` - Tickets and donations
@@ -96,7 +97,16 @@ https://www.kindercause.com/api/auth/callback/google
 
 ## 🔄 Recent Changes
 
-### December 15, 2025
+### December 15, 2025 (Latest)
+- Updated pricing: Starter $49/month, Growth $99/month
+- Created custom sign-in page (`/signin`) with branded design
+- Added waitlist modal with form (first name, daycare name, email)
+- Created `/api/waitlist` endpoint
+- Updated landing page CTAs to "Join Waitlist"
+- Removed "Start Free Trial" (replaced with waitlist)
+- Updated database schema: renamed `leads` to `waitlist` table
+
+### December 15, 2025 (Earlier)
 - Removed Pro pricing tier (now only Starter + Growth)
 - Updated hero section - replaced "Loved by 100+ directors" with "Launching Soon" badge
 - Updated CTA section - removed misleading "hundreds of daycares" claim
@@ -107,3 +117,4 @@ https://www.kindercause.com/api/auth/callback/google
 - Tech Stack: Next.js 14 + Supabase + Stripe + Tailwind CSS + DaisyUI
 - Hosting: Vercel
 - Domain: Namecheap (using Vercel DNS)
+- Login URL: `/signin` (custom page, not NextAuth default)
