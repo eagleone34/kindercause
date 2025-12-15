@@ -120,7 +120,8 @@ CREATE TABLE IF NOT EXISTS contacts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   
-  name TEXT NOT NULL,
+  first_name TEXT NOT NULL,
+  last_name TEXT,
   email TEXT NOT NULL,
   phone TEXT,
   
@@ -150,11 +151,12 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   
   subject TEXT NOT NULL,
-  body TEXT NOT NULL, -- HTML content
+  body TEXT, -- Plain text or HTML content
   
   -- Recipient filtering
-  recipient_filter JSONB DEFAULT '{}', -- Tag filters: {"tags": ["Current Parents"]}
+  filter_tags TEXT[] DEFAULT '{}', -- Array of tags to filter recipients
   recipient_count INTEGER DEFAULT 0,
+  sent_count INTEGER DEFAULT 0,
   
   -- Sending status
   status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'scheduled', 'sending', 'sent', 'failed')),
@@ -395,10 +397,11 @@ CREATE OR REPLACE FUNCTION update_contact_donation_stats()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.status = 'completed' THEN
-    INSERT INTO contacts (organization_id, name, email, total_donated, donation_count, last_donation_at)
+    INSERT INTO contacts (organization_id, first_name, last_name, email, total_donated, donation_count, last_donation_at)
     SELECT 
       f.organization_id,
-      NEW.purchaser_name,
+      SPLIT_PART(NEW.purchaser_name, ' ', 1),
+      NULLIF(TRIM(SUBSTR(NEW.purchaser_name, LENGTH(SPLIT_PART(NEW.purchaser_name, ' ', 1)) + 2)), ''),
       NEW.purchaser_email,
       NEW.amount,
       1,
