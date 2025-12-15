@@ -1,23 +1,25 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/libs/auth";
-import connectMongo from "@/libs/mongoose";
 import { createCustomerPortal } from "@/libs/stripe";
-import User from "@/models/User";
+import { createClient } from "@/libs/supabase";
 
 export async function POST(req) {
   const session = await auth();
 
   if (session) {
     try {
-      await connectMongo();
-
       const body = await req.json();
-
       const { id } = session.user;
 
-      const user = await User.findById(id);
+      // Get user's Stripe customer ID from organizations table
+      const supabase = createClient();
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("stripe_account_id")
+        .eq("user_id", id)
+        .single();
 
-      if (!user?.customerId) {
+      if (!org?.stripe_account_id) {
         return NextResponse.json(
           {
             error:
@@ -33,7 +35,7 @@ export async function POST(req) {
       }
 
       const stripePortalUrl = await createCustomerPortal({
-        customerId: user.customerId,
+        customerId: org.stripe_account_id,
         returnUrl: body.returnUrl,
       });
 

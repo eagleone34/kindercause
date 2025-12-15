@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import connectMongo from "@/libs/mongoose";
+import { createClient } from "@/libs/supabase";
 
 // This route is used to store the leads that are generated from the landing page.
 // The API call is initiated by <ButtonLead /> component
 // Duplicate emails just return 200 OK
 export async function POST(req) {
-  await connectMongo();
-
   const body = await req.json();
 
   if (!body.email) {
@@ -14,15 +12,21 @@ export async function POST(req) {
   }
 
   try {
-    // Here you can add your own logic
-    // For instance, sending a welcome email (use the the sendEmail helper function from /libs/resend)
-    // For instance, saving the lead in the database (uncomment the code below)
+    const supabase = createClient();
+    
+    // Check if lead already exists
+    const { data: existingLead } = await supabase
+      .from("leads")
+      .select("id")
+      .eq("email", body.email)
+      .single();
 
-    // const lead = await Lead.findOne({ email: body.email });
-
-    // if (!lead) {
-    // 	await Lead.create({ email: body.email });
-    // }
+    if (!existingLead) {
+      // Create new lead
+      await supabase
+        .from("leads")
+        .insert({ email: body.email });
+    }
 
     return NextResponse.json({});
   } catch (e) {
