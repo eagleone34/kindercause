@@ -59,30 +59,12 @@ export default function Page() {
             No credit card required • Free for 14 days • Cancel anytime
           </p>
 
-          {/* Social Proof */}
-          <div className="flex items-center gap-4 mt-8">
-            <div className="flex -space-x-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="w-10 h-10 rounded-full bg-primary/20 border-2 border-base-100 flex items-center justify-center text-sm font-medium"
-                >
-                  {["👩", "👨", "👩‍🦰", "👨‍🦱", "👩‍🦳"][i - 1]}
-                </div>
-              ))}
-            </div>
-            <div className="text-left">
-              <div className="flex items-center gap-1 text-yellow-500">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                    <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clipRule="evenodd" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-sm text-base-content/60">
-                Loved by 100+ directors
-              </p>
-            </div>
+          {/* Launch Badge */}
+          <div className="flex items-center gap-3 mt-8 bg-base-200 px-4 py-2 rounded-full">
+            <span className="text-lg">🚀</span>
+            <p className="text-sm text-base-content/70">
+              <span className="font-semibold">Launching Soon!</span> Join the waitlist for early access pricing
+            </p>
           </div>
         </section>
 
@@ -221,7 +203,7 @@ export default function Page() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
               {config.stripe.plans.map((plan, index) => (
                 <div
                   key={plan.name}
@@ -282,7 +264,7 @@ export default function Page() {
               Ready to Simplify Your Fundraising?
             </h2>
             <p className="text-base-content/70 mb-8 max-w-2xl mx-auto">
-              Join hundreds of daycares raising more money with less stress.
+              Be among the first daycares to simplify their fundraising.
               Set up your first fundraiser in under 10 minutes.
             </p>
             <Link href="/api/auth/signin" className="btn btn-primary btn-lg">

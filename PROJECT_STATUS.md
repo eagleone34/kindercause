@@ -1,0 +1,109 @@
+# KinderCause - Project Status
+
+**Last Updated:** December 15, 2025
+
+## 🌐 Live URLs
+- **Production:** https://kindercause.com
+- **Vercel:** https://kindercause.vercel.app
+- **GitHub:** https://github.com/eagleone34/kindercause
+
+## 📊 Current Status: MVP Complete - Pre-Launch
+
+### Pricing Tiers (2 plans)
+| Plan | Price | Transaction Fee |
+|------|-------|-----------------|
+| Starter | $29/month | 3% |
+| Growth | $79/month | 2% |
+
+### ✅ Completed Features
+
+#### Core Platform
+- [x] Landing page with hero, features, pricing sections
+- [x] Google OAuth authentication
+- [x] Dashboard layout with sidebar navigation
+- [x] Responsive design (mobile + desktop)
+
+#### Fundraising
+- [x] Event ticketing (create events, sell tickets)
+- [x] Donation campaigns (goal tracking, progress display)
+- [x] Public fundraiser pages (`/[org]/[fundraiser]`)
+- [x] Stripe Checkout integration
+
+#### Contact Management
+- [x] Contact list with search and filtering
+- [x] CSV import with column mapping
+- [x] Tagging system
+- [x] CSV export
+
+#### Email Campaigns
+- [x] Campaign list page
+- [x] Create new campaigns
+- [x] Filter recipients by tags
+- [x] SendGrid/Resend integration
+- [x] Draft saving
+
+### 🔧 Configuration Required
+
+#### Environment Variables (Vercel)
+```
+NEXTAUTH_URL=https://kindercause.com
+NEXTAUTH_SECRET=(generated)
+AUTH_TRUST_HOST=true
+NEXT_PUBLIC_APP_URL=https://kindercause.com
+GOOGLE_ID=(from Google Cloud Console)
+GOOGLE_SECRET=(from Google Cloud Console)
+NEXT_PUBLIC_SUPABASE_URL=(from Supabase)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=(from Supabase)
+SUPABASE_SERVICE_ROLE_KEY=(from Supabase)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=(from Stripe)
+STRIPE_SECRET_KEY=(from Stripe)
+STRIPE_WEBHOOK_SECRET=(from Stripe)
+STRIPE_STARTER_PRICE_ID=(from Stripe)
+STRIPE_GROWTH_PRICE_ID=(from Stripe)
+```
+
+#### Google OAuth Redirect URIs
+```
+https://kindercause.com/api/auth/callback/google
+https://www.kindercause.com/api/auth/callback/google
+```
+
+#### Stripe Webhook
+- **Endpoint:** `https://kindercause.com/api/webhook/stripe`
+- **Events:** `checkout.session.completed`, `customer.subscription.deleted`, `invoice.paid`
+
+### 📁 Database Tables (Supabase)
+- `leads` - Landing page signups
+- `organizations` - Daycare accounts
+- `fundraisers` - Events and campaigns
+- `purchases` - Tickets and donations
+- `contacts` - Parent email lists
+- `email_campaigns` - Email campaigns
+- `volunteer_shifts` - (Phase 2)
+- `volunteer_signups` - (Phase 2)
+
+### 🚧 Known Issues / TODOs
+- [ ] Logo image needs to be added (`/public/logoAndName.png`)
+- [ ] Privacy Policy page content
+- [ ] Terms of Service page content
+- [ ] Demo video for landing page
+
+### 📋 Phase 2 Features (Not Started)
+- [ ] Volunteer shift management
+- [ ] Analytics dashboard
+- [ ] Brightwheel integration
+- [ ] White-label branding
+
+## 🔄 Recent Changes
+
+### December 15, 2025
+- Removed Pro pricing tier (now only Starter + Growth)
+- Updated hero section - replaced "Loved by 100+ directors" with "Launching Soon" badge
+- Updated CTA section - removed misleading "hundreds of daycares" claim
+- Fixed MongoDB → Supabase migration (all API routes now use Supabase)
+- Fixed authentication (removed MongoDB adapter, Google OAuth only)
+
+## 📝 Notes
+- Tech Stack: Next.js 14 + Supabase + Stripe + Tailwind CSS + DaisyUI
+- Hosting: Vercel
+- Domain: Namecheap (using Vercel DNS)

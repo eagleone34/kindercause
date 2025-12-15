@@ -52,21 +52,6 @@ const config = {
           { name: "2% transaction fee" },
         ],
       },
-      {
-        priceId:
-          process.env.STRIPE_PRO_PRICE_ID || "price_pro_placeholder",
-        name: "Pro",
-        description: "For large centers and franchises",
-        price: 149,
-        priceAnchor: 199,
-        features: [
-          { name: "Everything in Growth" },
-          { name: "Brightwheel integration" },
-          { name: "White-label branding" },
-          { name: "Priority support" },
-          { name: "1.5% transaction fee" },
-        ],
-      },
     ],
     // Platform fee percentage (3% for Starter)
     platformFeePercent: 3,
