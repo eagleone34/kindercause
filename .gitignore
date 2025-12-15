@@ -26,6 +26,10 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
@@ -34,10 +38,48 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# public
+# public generated files
 public/robots.txt
 public/sitemap.xml
 public/sitemap-0.xml
 
-# environment variables
-.env*
+# environment variables - NEVER commit these
+.env
+.env.*
+!.env.example
+
+# Internal/confidential documentation
+INTERNAL_DOCS.md
+INTERNAL_*.md
+docs/internal/
+**/internal/**
+
+# Local development
+.wrangler/
+.dev.vars
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Backup files
+*.backup
+*.bak
+
+# Sensitive data
+secrets/
+*.key
+*.pem
+*.p12
+credentials.json
+service-account.json

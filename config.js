@@ -18,9 +18,7 @@ const config = {
       {
         // REQUIRED — we use this to find the plan in the webhook (for instance if you want to update the user's credits based on the plan)
         priceId:
-          process.env.NODE_ENV === "development"
-            ? "price_starter_dev"
-            : "price_starter_prod",
+          process.env.STRIPE_STARTER_PRICE_ID || "price_starter_placeholder",
         //  REQUIRED - Name of the plan, displayed on the pricing page
         name: "Starter",
         // A friendly description of the plan, displayed on the pricing page. Tip: explain why this plan and not others
@@ -41,9 +39,7 @@ const config = {
         // This plan will look different on the pricing page, it will be highlighted. You can only have one plan with isFeatured: true
         isFeatured: true,
         priceId:
-          process.env.NODE_ENV === "development"
-            ? "price_growth_dev"
-            : "price_growth_prod",
+          process.env.STRIPE_GROWTH_PRICE_ID || "price_growth_placeholder",
         name: "Growth",
         description: "For growing daycares with more frequent fundraising",
         price: 79,
@@ -58,9 +54,7 @@ const config = {
       },
       {
         priceId:
-          process.env.NODE_ENV === "development"
-            ? "price_pro_dev"
-            : "price_pro_prod",
+          process.env.STRIPE_PRO_PRICE_ID || "price_pro_placeholder",
         name: "Pro",
         description: "For large centers and franchises",
         price: 149,
