@@ -55,4 +55,7 @@ export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
 );
 
+// Alias for API routes - uses service role key for server-side operations
+export { createAdminSupabaseClient as createClient };
+
 export default supabase;
