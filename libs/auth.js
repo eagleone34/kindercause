@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import Resend from "next-auth/providers/resend";
 import config from "@/config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -20,7 +21,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
+    Resend({
+      apiKey: process.env.RESEND_API_KEY,
+      from: config.resend.fromNoReply,
+    }),
   ],
+
+  pages: {
+    signIn: "/signin",
+    verifyRequest: "/signin/verify",
+    error: "/signin/error",
+  },
 
   callbacks: {
     session: async ({ session, token }) => {

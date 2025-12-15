@@ -19,7 +19,8 @@
 
 #### Core Platform
 - [x] Landing page with hero, features, pricing sections
-- [x] Custom sign-in page (`/signin`) with Google OAuth
+- [x] Custom sign-in page (`/signin`) with Google OAuth + Email Magic Link
+- [x] Email magic link authentication (passwordless via Resend)
 - [x] Waitlist capture form (first name, daycare name, email)
 - [x] Dashboard layout with sidebar navigation
 - [x] Responsive design (mobile + desktop)
@@ -98,6 +99,10 @@ https://www.kindercause.com/api/auth/callback/google
 ## 🔄 Recent Changes
 
 ### December 15, 2025 (Latest)
+- Added email magic link authentication (passwordless sign-in via Resend)
+- Updated sign-in page with email input + Google OAuth options
+- Created `/signin/verify` page (check your email)
+- Created `/signin/error` page (error handling)
 - Updated pricing: Starter $49/month, Growth $99/month
 - Created custom sign-in page (`/signin`) with branded design
 - Added waitlist modal with form (first name, daycare name, email)

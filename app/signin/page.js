@@ -6,15 +6,33 @@ import Link from "next/link";
 import config from "@/config";
 
 export default function SignInPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
+  const [isLoadingEmail, setIsLoadingEmail] = useState(false);
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
+    setIsLoadingGoogle(true);
     try {
       await signIn("google", { callbackUrl: "/dashboard" });
     } catch (error) {
       console.error("Sign in error:", error);
-      setIsLoading(false);
+      setIsLoadingGoogle(false);
+    }
+  };
+
+  const handleEmailSignIn = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+    
+    setIsLoadingEmail(true);
+    try {
+      await signIn("resend", { 
+        email,
+        callbackUrl: "/dashboard",
+      });
+    } catch (error) {
+      console.error("Email sign in error:", error);
+      setIsLoadingEmail(false);
     }
   };
 
@@ -40,13 +58,55 @@ export default function SignInPage() {
               </p>
             </div>
 
+            {/* Email Sign In Form */}
+            <form onSubmit={handleEmailSignIn} className="space-y-4">
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Email address</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@yourdaycare.com"
+                  className="input input-bordered w-full"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoadingEmail || !email}
+                className="btn btn-primary w-full"
+              >
+                {isLoadingEmail ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm" />
+                    Sending link...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                    </svg>
+                    Continue with Email
+                  </>
+                )}
+              </button>
+            </form>
+
+            <p className="text-xs text-center text-base-content/50 mt-3">
+              We&apos;ll send you a magic link to sign in - no password needed!
+            </p>
+
+            <div className="divider text-sm text-base-content/40 my-6">or</div>
+
             {/* Google Sign In Button */}
             <button
               onClick={handleGoogleSignIn}
-              disabled={isLoading}
+              disabled={isLoadingGoogle}
               className="btn btn-outline w-full gap-3 h-12 text-base font-medium hover:bg-base-200"
             >
-              {isLoading ? (
+              {isLoadingGoogle ? (
                 <span className="loading loading-spinner loading-sm" />
               ) : (
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -70,15 +130,6 @@ export default function SignInPage() {
               )}
               Continue with Google
             </button>
-
-            <div className="divider text-sm text-base-content/40 my-6">or</div>
-
-            {/* Email Sign In (placeholder for future) */}
-            <div className="space-y-4">
-              <p className="text-center text-sm text-base-content/60">
-                More sign-in options coming soon
-              </p>
-            </div>
 
             {/* Terms */}
             <p className="text-xs text-center text-base-content/50 mt-6">
