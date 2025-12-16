@@ -16,6 +16,20 @@ const Pricing = () => {
           </h2>
         </div>
 
+        <div className="flex justify-center mb-12">
+          <div className="bg-base-100 border-2 border-primary/20 p-4 rounded-lg flex items-center gap-4 shadow-lg max-w-lg mx-auto transform hover:scale-105 transition-transform duration-200">
+            <div className="bg-yellow-100 p-2 rounded-full">
+              <span className="text-xl">🚀</span>
+            </div>
+            <div className="text-left">
+              <h3 className="font-bold text-lg">Launch Special</h3>
+              <p className="text-base-content/80 text-sm">
+                Early adopter pricing applies to the <span className="font-bold text-primary">first 100 customers</span>.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="relative flex justify-center flex-col lg:flex-row items-center lg:items-stretch gap-8">
           {config.stripe.plans.map((plan) => (
             <div key={plan.priceId} className="relative w-full max-w-lg">
