@@ -46,6 +46,7 @@ export default function NewEmailCampaignPage() {
         setAllTags(Array.from(tags));
       }
     } catch (error) {
+      console.error(error);
       toast.error("Failed to load contacts");
     }
   };
@@ -178,11 +179,10 @@ export default function NewEmailCampaignPage() {
                 {allTags.map((tag) => (
                   <button
                     key={tag}
-                    className={`badge badge-lg cursor-pointer ${
-                      formData.selectedTags.includes(tag)
+                    className={`badge badge-lg cursor-pointer ${formData.selectedTags.includes(tag)
                         ? "badge-primary"
                         : "badge-outline"
-                    }`}
+                      }`}
                     onClick={() => toggleTag(tag)}
                   >
                     {tag}

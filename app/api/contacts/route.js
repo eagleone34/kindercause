@@ -3,7 +3,7 @@ import { auth } from "@/libs/auth";
 import { createAdminSupabaseClient } from "@/libs/supabase";
 
 // GET /api/contacts - List all contacts for the user's organization
-export async function GET(req) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useDropzone } from "react-dropzone";
 import Papa from "papaparse";
 import toast from "react-hot-toast";
 
 export default function ImportContactsPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: upload, 2: preview, 3: done
   const [parsedData, setParsedData] = useState([]);
@@ -159,11 +159,10 @@ export default function ImportContactsPage() {
         <div className="bg-base-100 rounded-box shadow p-8">
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-              isDragActive
-                ? "border-primary bg-primary/5"
-                : "border-base-300 hover:border-primary/50"
-            }`}
+            className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${isDragActive
+              ? "border-primary bg-primary/5"
+              : "border-base-300 hover:border-primary/50"
+              }`}
           >
             <input {...getInputProps()} />
             <div className="text-5xl mb-4">📄</div>

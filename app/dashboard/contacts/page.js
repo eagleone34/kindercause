@@ -27,6 +27,7 @@ export default function ContactsPage() {
         setAllTags(Array.from(tags));
       }
     } catch (error) {
+      console.error(error);
       toast.error("Failed to load contacts");
     } finally {
       setIsLoading(false);
@@ -53,6 +54,7 @@ export default function ContactsPage() {
         throw new Error("Failed to delete");
       }
     } catch (error) {
+      console.error(error);
       toast.error("Failed to delete contact");
     }
   };

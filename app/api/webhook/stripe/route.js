@@ -50,7 +50,7 @@ export async function POST(req) {
 
         // Check if this is a fundraiser purchase (ticket/donation)
         if (metadata.fundraiser_id) {
-          await handleFundraiserPurchase(session, supabase, stripe);
+          await handleFundraiserPurchase(session, supabase);
         } else {
           // This is a SaaS subscription - handle user access
           await handleSubscriptionPurchase(session, supabase, stripe);
@@ -109,7 +109,7 @@ export async function POST(req) {
 }
 
 // Handle ticket/donation purchases
-async function handleFundraiserPurchase(session, supabase, stripe) {
+async function handleFundraiserPurchase(session, supabase) {
   const metadata = session.metadata;
   const fundraiserId = metadata.fundraiser_id;
   const type = metadata.type; // "ticket" or "donation"
@@ -174,7 +174,7 @@ async function handleFundraiserPurchase(session, supabase, stripe) {
 // Handle SaaS subscription purchases
 async function handleSubscriptionPurchase(session, supabase, stripe) {
   const customerId = session.customer;
-  const customer = await stripe.customers.retrieve(customerId);
+  // const customer = await stripe.customers.retrieve(customerId);
 
   // Get the price ID from line items
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id);

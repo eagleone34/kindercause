@@ -12,7 +12,7 @@ function generateSlug(name) {
 }
 
 // GET /api/fundraisers - List all fundraisers for the user's organization
-export async function GET(req) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -20,7 +20,7 @@ export async function GET(req) {
     }
 
     const supabase = createAdminSupabaseClient();
-    
+
     // First get the user's organization
     const { data: org, error: orgError } = await supabase
       .from("organizations")

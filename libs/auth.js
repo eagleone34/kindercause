@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
 import { SupabaseAdapter } from "@auth/supabase-adapter";
+import { Resend as ResendSDK } from "resend";
 import config from "@/config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -13,6 +14,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     url: process.env.NEXT_PUBLIC_SUPABASE_URL,
     secret: process.env.SUPABASE_SERVICE_ROLE_KEY,
   }),
+
+  // Generate 6-digit OTP
+  generateVerificationToken: async () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  },
 
   providers: [
     GoogleProvider({
@@ -31,6 +37,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Resend({
       apiKey: process.env.RESEND_API_KEY,
       from: config.resend.fromNoReply,
+      sendVerificationRequest: async ({ identifier: email, url, token }) => {
+        const resend = new ResendSDK(process.env.RESEND_API_KEY);
+
+        const { error } = await resend.emails.send({
+          from: config.resend.fromNoReply || "KinderCause <noreply@kindercause.com>",
+          to: email,
+          subject: `Sign in code: ${token}`,
+          html: `
+            <body style="background: #f9f9f9; font-family: sans-serif; padding: 20px;">
+              <div style="max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h2 style="color: #333; margin-top: 0;">Sign in to KinderCause</h2>
+                <p style="color: #666; font-size: 16px;">Enter the following code to sign in:</p>
+                <div style="background: #f4f4f5; padding: 15px; font-size: 32px; font-weight: bold; letter-spacing: 5px; border-radius: 8px; margin: 20px 0; color: #000;">
+                  ${token}
+                </div>
+                <p style="color: #888; font-size: 14px;">This code will expire in 24 hours.</p>
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #aaa;">
+                  If you didn't request this email, you can safely ignore it.
+                </div>
+              </div>
+            </body>
+          `,
+        });
+
+        if (error) {
+          console.error("Resend error:", error);
+          throw new Error("Failed to send verification email");
+        }
+      },
     }),
   ],
 
@@ -50,12 +85,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-  
+
   // Use database sessions for magic links (required for email provider)
   session: {
     strategy: "database",
   },
-  
+
   theme: {
     brandColor: config.colors.main,
     logo: `https://${config.domainName}/logoAndName.png`,

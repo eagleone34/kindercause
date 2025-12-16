@@ -11,7 +11,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { subject, body: emailBody, selectedTags, recipientCount } = body;
+    const { subject, body: emailBody, selectedTags } = body;
 
     if (!subject || !emailBody) {
       return NextResponse.json({ error: "Subject and message are required" }, { status: 400 });
@@ -37,7 +37,7 @@ export async function POST(req) {
     // Filter by tags if specified
     let recipients = contacts;
     if (selectedTags && selectedTags.length > 0) {
-      recipients = contacts.filter(contact => 
+      recipients = contacts.filter(contact =>
         selectedTags.some(tag => contact.tags?.includes(tag))
       );
     }
@@ -68,7 +68,7 @@ export async function POST(req) {
     // Send emails via SendGrid or Resend
     // In production, this would be an async job
     // For MVP, we'll use a simple approach
-    
+
     let sentCount = 0;
     const errors = [];
 

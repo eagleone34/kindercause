@@ -20,6 +20,7 @@ export default function EmailCampaignsPage() {
         setCampaigns(data.campaigns);
       }
     } catch (error) {
+      console.error(error);
       toast.error("Failed to load campaigns");
     } finally {
       setIsLoading(false);
