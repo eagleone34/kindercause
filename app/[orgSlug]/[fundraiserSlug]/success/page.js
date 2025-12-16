@@ -5,7 +5,7 @@ import config from "@/config";
 // Success page after successful checkout
 export default async function SuccessPage({ params, searchParams }) {
   const { orgSlug, fundraiserSlug } = await params;
-  const { session_id } = await searchParams;
+  // const { session_id } = use(searchParams);
 
   const supabase = createAdminSupabaseClient();
 

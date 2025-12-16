@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import config from "@/config";
 import toast from "react-hot-toast";
 
-export default function SignInPage() {
+function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
@@ -136,6 +136,161 @@ export default function SignInPage() {
   );
 
   return (
+    <div className="w-full max-w-md">
+      {/* Main Card */}
+      <div className="bg-base-100 rounded-2xl shadow-xl p-8">
+
+        {/* Title Section */}
+        <div className="text-center mb-8">
+          {view === "code" ? (
+            <>
+              <h1 className="text-2xl font-bold mb-2">Check your email</h1>
+              <p className="text-base-content/60">
+                We sent a 6-digit code to <span className="font-semibold">{email}</span>
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold mb-2">
+                {view === "signup" ? "Create your account" : `Welcome to ${config.appName}`}
+              </h1>
+              <p className="text-base-content/60">
+                {view === "signup" ? "Get started in minutes" : "Sign in to manage your fundraisers"}
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div role="alert" className="alert alert-error text-sm py-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* View: LOGIN or SIGNUP */}
+        {(view === "login" || view === "signup") && (
+          <div className="space-y-4">
+            {/* Google Button */}
+            {renderGoogleButton()}
+
+            <div className="divider text-sm text-base-content/40 my-4">or</div>
+
+            {/* Email Form */}
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Email address</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@yourdaycare.com"
+                  className="input input-bordered w-full"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading || !email}
+                className="btn btn-primary w-full"
+              >
+                {isLoading ? (
+                  <span className="loading loading-spinner loading-sm" />
+                ) : (
+                  view === "signup" ? "Sign Up with Email" : "Continue with Email"
+                )}
+              </button>
+            </form>
+
+            {/* Toggle View */}
+            <div className="text-center mt-4">
+              {view === "login" ? (
+                <p className="text-sm">
+                  Don&apos;t have an account?{" "}
+                  <button
+                    onClick={() => { setView("signup"); setError(""); }}
+                    className="link link-primary font-medium"
+                  >
+                    Sign up
+                  </button>
+                </p>
+              ) : (
+                <p className="text-sm">
+                  Already have an account?{" "}
+                  <button
+                    onClick={() => { setView("login"); setError(""); }}
+                    className="link link-primary font-medium"
+                  >
+                    Log in
+                  </button>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* View: VERIFY CODE */}
+        {view === "code" && (
+          <form onSubmit={handleVerifyCode} className="space-y-6">
+            <div className="form-control">
+              <label className="label justify-center">
+                <span className="label-text font-medium">Verification Code</span>
+              </label>
+              <input
+                type="text"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="123456"
+                className="input input-bordered w-full text-center text-2xl tracking-widest"
+                required
+                maxLength={6}
+                autoFocus
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || code.length < 6}
+              className="btn btn-primary w-full"
+            >
+              {isLoading ? (
+                <span className="loading loading-spinner loading-sm" />
+              ) : (
+                "Verify & Sign In"
+              )}
+            </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => { setView("login"); setCode(""); setError(""); }}
+                className="text-sm link"
+              >
+                Back to login
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Terms Footer */}
+        {(view === "login" || view === "signup") && (
+          <p className="text-xs text-center text-base-content/50 mt-6">
+            By continuing, you agree to our{" "}
+            <Link href="/tos" className="link">Terms</Link>{" "}
+            and{" "}
+            <Link href="/privacy-policy" className="link">Privacy Policy</Link>
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
     <div className="min-h-screen bg-gradient-to-b from-base-100 to-base-200 flex flex-col">
       {/* Header */}
       <header className="p-4">
@@ -147,156 +302,9 @@ export default function SignInPage() {
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Main Card */}
-          <div className="bg-base-100 rounded-2xl shadow-xl p-8">
-
-            {/* Title Section */}
-            <div className="text-center mb-8">
-              {view === "code" ? (
-                <>
-                  <h1 className="text-2xl font-bold mb-2">Check your email</h1>
-                  <p className="text-base-content/60">
-                    We sent a 6-digit code to <span className="font-semibold">{email}</span>
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h1 className="text-2xl font-bold mb-2">
-                    {view === "signup" ? "Create your account" : `Welcome to ${config.appName}`}
-                  </h1>
-                  <p className="text-base-content/60">
-                    {view === "signup" ? "Get started in minutes" : "Sign in to manage your fundraisers"}
-                  </p>
-                </>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div role="alert" className="alert alert-error text-sm py-2 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* View: LOGIN or SIGNUP */}
-            {(view === "login" || view === "signup") && (
-              <div className="space-y-4">
-                {/* Google Button */}
-                {renderGoogleButton()}
-
-                <div className="divider text-sm text-base-content/40 my-4">or</div>
-
-                {/* Email Form */}
-                <form onSubmit={handleEmailSubmit} className="space-y-4">
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">Email address</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@yourdaycare.com"
-                      className="input input-bordered w-full"
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={isLoading || !email}
-                    className="btn btn-primary w-full"
-                  >
-                    {isLoading ? (
-                      <span className="loading loading-spinner loading-sm" />
-                    ) : (
-                      view === "signup" ? "Sign Up with Email" : "Continue with Email"
-                    )}
-                  </button>
-                </form>
-
-                {/* Toggle View */}
-                <div className="text-center mt-4">
-                  {view === "login" ? (
-                    <p className="text-sm">
-                      Don&apos;t have an account?{" "}
-                      <button
-                        onClick={() => { setView("signup"); setError(""); }}
-                        className="link link-primary font-medium"
-                      >
-                        Sign up
-                      </button>
-                    </p>
-                  ) : (
-                    <p className="text-sm">
-                      Already have an account?{" "}
-                      <button
-                        onClick={() => { setView("login"); setError(""); }}
-                        className="link link-primary font-medium"
-                      >
-                        Log in
-                      </button>
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* View: VERIFY CODE */}
-            {view === "code" && (
-              <form onSubmit={handleVerifyCode} className="space-y-6">
-                <div className="form-control">
-                  <label className="label justify-center">
-                    <span className="label-text font-medium">Verification Code</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="123456"
-                    className="input input-bordered w-full text-center text-2xl tracking-widest"
-                    required
-                    maxLength={6}
-                    autoFocus
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading || code.length < 6}
-                  className="btn btn-primary w-full"
-                >
-                  {isLoading ? (
-                    <span className="loading loading-spinner loading-sm" />
-                  ) : (
-                    "Verify & Sign In"
-                  )}
-                </button>
-
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => { setView("login"); setCode(""); setError(""); }}
-                    className="text-sm link"
-                  >
-                    Back to login
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* Terms Footer */}
-            {(view === "login" || view === "signup") && (
-              <p className="text-xs text-center text-base-content/50 mt-6">
-                By continuing, you agree to our{" "}
-                <Link href="/tos" className="link">Terms</Link>{" "}
-                and{" "}
-                <Link href="/privacy-policy" className="link">Privacy Policy</Link>
-              </p>
-            )}
-          </div>
-        </div>
+        <Suspense fallback={<div className="loading loading-spinner loading-lg text-primary"></div>}>
+          <SignInContent />
+        </Suspense>
       </main>
     </div>
   );

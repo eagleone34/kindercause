@@ -23,7 +23,7 @@ export default function EmailCampaignDetailPage({ params }) {
   useEffect(() => {
     fetchCampaign();
     fetchContacts();
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (formData.selectedTags.length === 0) {
@@ -170,8 +170,8 @@ export default function EmailCampaignDetailPage({ params }) {
             </h1>
             <div className="flex items-center gap-2 mt-1">
               <span className={`badge ${campaign.status === "draft" ? "badge-ghost" :
-                  campaign.status === "sent" ? "badge-success" :
-                    "badge-info"
+                campaign.status === "sent" ? "badge-success" :
+                  "badge-info"
                 }`}>
                 {campaign.status}
               </span>
@@ -240,8 +240,8 @@ export default function EmailCampaignDetailPage({ params }) {
                     <button
                       key={tag}
                       className={`badge badge-lg cursor-pointer ${formData.selectedTags.includes(tag)
-                          ? "badge-primary"
-                          : "badge-outline"
+                        ? "badge-primary"
+                        : "badge-outline"
                         }`}
                       onClick={() => toggleTag(tag)}
                     >
