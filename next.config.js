@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js'],
-  },
   images: {
     remotePatterns: [
       // NextJS <Image> component needs to whitelist domains for src={}
