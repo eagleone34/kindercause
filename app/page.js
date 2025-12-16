@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import config from "@/config";
 import BookDemoModal from "@/components/BookDemoModal";
+import ButtonCheckout from "@/components/ButtonCheckout";
 
 export default function Page() {
   const [isDemoOpen, setIsDemoOpen] = useState(false);
@@ -258,13 +258,14 @@ export default function Page() {
                       </li>
                     ))}
                   </ul>
-                  <button
-                    onClick={() => setIsDemoOpen(true)}
+                  <ButtonCheckout
+                    priceId={plan.priceId}
+                    mode="subscription"
                     className={`btn w-full ${plan.isFeatured ? "btn-primary" : "btn-outline"
                       }`}
                   >
-                    Book Demo
-                  </button>
+                    Start your 7 day free trial
+                  </ButtonCheckout>
                 </div>
               ))}
             </div>
