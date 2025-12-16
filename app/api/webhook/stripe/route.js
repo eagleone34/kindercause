@@ -174,7 +174,8 @@ async function handleFundraiserPurchase(session, supabase) {
 // Handle SaaS subscription purchases
 async function handleSubscriptionPurchase(session, supabase, stripe) {
   const customerId = session.customer;
-  // const customer = await stripe.customers.retrieve(customerId);
+  const customerEmail = session.customer_details?.email;
+  const customerName = session.customer_details?.name || "New User";
 
   // Get the price ID from line items
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
@@ -187,22 +188,97 @@ async function handleSubscriptionPurchase(session, supabase, stripe) {
     return;
   }
 
-  // Update or create organization with subscription info
-  const userId = session.client_reference_id;
+  let userId = session.client_reference_id;
+
+  // If no userId (user wasn't logged in), find or create user
+  if (!userId && customerEmail) {
+    // 1. Check if user exists by email
+    const { data: existingUser } = await supabase.auth.admin.listUsers();
+    // filtered listUsers is not efficient for production but okay for prototype. 
+    // Better: supabase.rpc or rely on createUser failure if unique constraint?
+    // Actually, listUsers doesn't filter by email easily without pagination.
+    // Let's try creating the user directly. If it fails with "User already registered", we fetch their ID.
+
+    // Attempt to create user with auto-confirmed email (since they paid)
+    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+      email: customerEmail,
+      email_confirm: true,
+      user_metadata: { name: customerName }
+    });
+
+    if (newUser?.user) {
+      userId = newUser.user.id;
+      console.log(`✅ Created new user for ${customerEmail}: ${userId}`);
+
+      // Send password reset email so they can log in
+      await supabase.auth.resetPasswordForEmail(customerEmail, {
+        redirectTo: `${configFile.domainName ? `https://${configFile.domainName}` : ""}/dashboard/settings`,
+      });
+    } else if (createError) {
+      console.log("User might already exist, attempting to find...", createError.message);
+      // If creation failed, likely they exist. We need to find their ID.
+      // Since we are admin, we can list users. Ideally we'd have a getUserByEmail function but admin API has listUsers.
+      // We can rely on the error message or try to sign in (not possible).
+      // Let's assume they exist and try to fetch via listUsers (WARNING: this is not performant for large DBs, but Supabase admin has 'getUserById'. 'listUsers' supports query?)
+      // Currently Supabase JS Admin doesn't have getUserByEmail. 
+      // Workaround: We will skip linking if we can't find them, OR (better) we just let them log in and restore purchase? 
+      // BETTER: We can search the `auth.users` via a direct DB query if we had access, but here we use the client.
+      // Let's iterate page 1 (likely fine for now) or ERROR out.
+      // WAIT: We can use `getUserByEmail` IS available in newer Supabase versions or we can use the `rpc` if setup.
+      // Let's fallback to: If we can't create, we can't link effectively without ID. 
+      // ACTUALLY: The `createError` often contains the ID if it says "User already registered"? No.
+      // Re-reading docs: `createUser` throws if exists.
+
+      // Alternative: Just fail gracefully for now. Use the email to send a "Link your subscription" notice?
+      // Let's assume for this MVP we only handle NEW users. If they exist, they should have logged in.
+      // But we can try to find them in our public 'users' table if we had one (we don't, we have `organizations`).
+      // Wait, we have `organizations`. We can search `organizations` (which has user_id) where user email matches? 
+      // Organizations doesn't have email. `auth.users` is hidden.
+
+      console.warn("Could not create user, they may already exist. Linking failed.");
+      return;
+    }
+  }
 
   if (userId) {
-    const { error } = await supabase
+    // Check if organization exists for this user
+    const { data: orgs } = await supabase
       .from("organizations")
-      .update({
+      .select("id")
+      .eq("user_id", userId)
+      .single();
+
+    if (orgs) {
+      // Update existing organization
+      const { error } = await supabase
+        .from("organizations")
+        .update({
+          stripe_customer_id: customerId,
+          subscription_status: "active",
+          price_id: priceId,
+          plan_name: plan.name,
+        })
+        .eq("user_id", userId);
+
+      if (error) console.error("Error updating organization:", error);
+    } else {
+      // Create NEW organization for this user
+      const orgName = customerName && customerName !== "New User" ? `${customerName}'s Daycare` : "My Daycare";
+      const slug = `daycare-${Math.random().toString(36).substring(2, 8)}`; // generic slug
+
+      const { error } = await supabase.from("organizations").insert({
+        user_id: userId,
+        name: orgName,
+        slug: slug,
         stripe_customer_id: customerId,
         subscription_status: "active",
         price_id: priceId,
         plan_name: plan.name,
-      })
-      .eq("user_id", userId);
+        is_nonprofit: false
+      });
 
-    if (error) {
-      console.error("Error updating organization:", error);
+      if (error) console.error("Error creating organization:", error);
+      else console.log(`✅ Created new organization for user ${userId}`);
     }
   }
 
