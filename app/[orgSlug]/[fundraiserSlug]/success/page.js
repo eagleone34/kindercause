@@ -3,7 +3,7 @@ import { createAdminSupabaseClient } from "@/libs/supabase";
 import config from "@/config";
 
 // Success page after successful checkout
-export default async function SuccessPage({ params, searchParams }) {
+export default async function SuccessPage({ params }) {
   const { orgSlug, fundraiserSlug } = await params;
   // const { session_id } = use(searchParams);
 

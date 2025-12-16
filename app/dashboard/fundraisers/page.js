@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -82,10 +83,12 @@ function FundraiserCard({ fundraiser }) {
       {/* Image */}
       <div className="aspect-video bg-base-200 relative">
         {fundraiser.image_url ? (
-          <img
+          <Image
             src={fundraiser.image_url}
             alt={fundraiser.name}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl">
@@ -93,11 +96,10 @@ function FundraiserCard({ fundraiser }) {
           </div>
         )}
         <div className="absolute top-2 right-2">
-          <span className={`badge ${
-            fundraiser.status === "active" ? "badge-success" :
+          <span className={`badge ${fundraiser.status === "active" ? "badge-success" :
             fundraiser.status === "completed" ? "badge-info" :
-            "badge-ghost"
-          }`}>
+              "badge-ghost"
+            }`}>
             {fundraiser.status}
           </span>
         </div>
