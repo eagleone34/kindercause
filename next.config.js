@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
+  },
   images: {
     remotePatterns: [
       // NextJS <Image> component needs to whitelist domains for src={}
@@ -9,7 +12,7 @@ const nextConfig = {
         hostname: "lh3.googleusercontent.com",
       },
       {
-        protocol: "https", 
+        protocol: "https",
         hostname: "pbs.twimg.com",
       },
       {
@@ -23,6 +26,11 @@ const nextConfig = {
     ],
   },
   webpack: (config, { webpack, isServer }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@supabase/supabase-js': '@supabase/supabase-js/dist/main/index.js',
+    };
+
     // Ignore MongoDB's optional dependencies to prevent build warnings
     if (isServer) {
       config.plugins.push(
@@ -31,7 +39,7 @@ const nextConfig = {
         })
       );
     }
-    
+
     return config;
   },
 };
