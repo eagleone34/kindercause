@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createAdminSupabaseClient } from "@/libs/supabase";
 import config from "@/config";
 import CheckoutButton from "./CheckoutButton";
@@ -104,12 +105,14 @@ export default async function PublicFundraiserPage({ params }) {
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
             {/* Image */}
-            <div className="aspect-video bg-base-100 rounded-box overflow-hidden shadow">
+            <div className="aspect-video bg-base-100 rounded-box overflow-hidden shadow relative">
               {fundraiser.image_url ? (
-                <img
+                <Image
                   src={fundraiser.image_url}
                   alt={fundraiser.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
@@ -121,11 +124,15 @@ export default async function PublicFundraiserPage({ params }) {
             {/* Organization */}
             <div className="flex items-center gap-3">
               {org.logo_url ? (
-                <img
-                  src={org.logo_url}
-                  alt={org.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
+                <div className="relative w-12 h-12">
+                  <Image
+                    src={org.logo_url}
+                    alt={org.name}
+                    fill
+                    className="rounded-full object-cover"
+                    sizes="48px"
+                  />
+                </div>
               ) : (
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="text-xl">🏫</span>
