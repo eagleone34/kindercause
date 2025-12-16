@@ -3,17 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import config from "@/config";
-import WaitlistModal from "@/components/WaitlistModal";
+import BookDemoModal from "@/components/BookDemoModal";
 
 export default function Page() {
-  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
 
   return (
     <>
-      {/* Waitlist Modal */}
-      <WaitlistModal
-        isOpen={isWaitlistOpen}
-        onClose={() => setIsWaitlistOpen(false)}
+      {/* Demo Booking Modal */}
+      <BookDemoModal
+        isOpen={isDemoOpen}
+        onClose={() => setIsDemoOpen(false)}
       />
 
       {/* Header */}
@@ -58,16 +58,16 @@ export default function Page() {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button
-              onClick={() => setIsWaitlistOpen(true)}
+              onClick={() => setIsDemoOpen(true)}
               className="btn btn-primary btn-lg"
             >
-              Join Waitlist
+              Book a Demo
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
               </svg>
             </button>
             <Link href="/signin" className="btn btn-outline btn-lg">
-              Sign In
+              Start Free 7 Day Trial
             </Link>
           </div>
 
@@ -259,11 +259,11 @@ export default function Page() {
                     ))}
                   </ul>
                   <button
-                    onClick={() => setIsWaitlistOpen(true)}
+                    onClick={() => setIsDemoOpen(true)}
                     className={`btn w-full ${plan.isFeatured ? "btn-primary" : "btn-outline"
                       }`}
                   >
-                    Join Waitlist
+                    Book Demo
                   </button>
                 </div>
               ))}
@@ -287,15 +287,20 @@ export default function Page() {
               Be among the first daycares to simplify their fundraising.
               Set up your first fundraiser in under 10 minutes.
             </p>
-            <button
-              onClick={() => setIsWaitlistOpen(true)}
-              className="btn btn-primary btn-lg"
-            >
-              Join the Waitlist
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-              </svg>
-            </button>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <button
+                onClick={() => setIsDemoOpen(true)}
+                className="btn btn-primary btn-lg"
+              >
+                Book a Demo
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                </svg>
+              </button>
+              <Link href="/signin" className="btn btn-outline btn-lg">
+                Start Free 7 Day Trial
+              </Link>
+            </div>
           </div>
         </section>
       </main>
