@@ -23,11 +23,6 @@ const nextConfig = {
     ],
   },
   webpack: (config, { webpack, isServer }) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@supabase/supabase-js': '@supabase/supabase-js/dist/main/index.js',
-    };
-
     // Ignore MongoDB's optional dependencies to prevent build warnings
     if (isServer) {
       config.plugins.push(
