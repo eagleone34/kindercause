@@ -13,7 +13,7 @@ function SignInContent() {
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   // State
-  const [view, setView] = useState("login"); // 'login' | 'signup' | 'code'
+  const [view, setView] = useState(searchParams.get("view") === "signup" ? "signup" : "login"); // 'login' | 'signup' | 'code'
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);

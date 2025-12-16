@@ -4,6 +4,7 @@ import Resend from "next-auth/providers/resend";
 import { SupabaseAdapter } from "@auth/supabase-adapter";
 import { Resend as ResendSDK } from "resend";
 import config from "@/config";
+import { createClient } from "@supabase/supabase-js";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // Set any random key in .env.local
@@ -83,6 +84,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token?.sub || user?.id;
       }
       return session;
+    },
+  },
+
+  events: {
+    async createUser({ user }) {
+      try {
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY
+        );
+
+        const orgName = user.name ? `${user.name}'s Daycare` : "My Daycare";
+        // Create a unique slug: my-daycare-[random-string]
+        const slug = `my-daycare-${Math.random().toString(36).substring(2, 8)}`;
+
+        const { error } = await supabase
+          .from("organizations")
+          .insert({
+            user_id: user.id,
+            name: orgName,
+            slug: slug,
+            is_nonprofit: false
+          });
+
+        if (error) {
+          console.error("Error creating organization for new user:", error);
+        } else {
+          console.log("Automatically created organization for user:", user.id);
+        }
+      } catch (err) {
+        console.error("Error in createUser event:", err);
+      }
     },
   },
 
