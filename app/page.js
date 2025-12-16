@@ -11,9 +11,9 @@ export default function Page() {
   return (
     <>
       {/* Waitlist Modal */}
-      <WaitlistModal 
-        isOpen={isWaitlistOpen} 
-        onClose={() => setIsWaitlistOpen(false)} 
+      <WaitlistModal
+        isOpen={isWaitlistOpen}
+        onClose={() => setIsWaitlistOpen(false)}
       />
 
       {/* Header */}
@@ -43,7 +43,7 @@ export default function Page() {
           <div className="badge badge-primary badge-outline">
             🚀 Built for daycares & preschools
           </div>
-          
+
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold max-w-4xl leading-tight">
             Fundraising Made{" "}
             <span className="text-primary">Simple</span>
@@ -52,12 +52,12 @@ export default function Page() {
           </h1>
 
           <p className="text-lg sm:text-xl text-base-content/70 max-w-2xl">
-            Stop juggling Venmo, spreadsheets, and email chains. 
+            Stop juggling Venmo, spreadsheets, and email chains.
             Create events, collect donations, and manage contacts — all in one place.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <button 
+            <button
               onClick={() => setIsWaitlistOpen(true)}
               className="btn btn-primary btn-lg"
             >
@@ -93,7 +93,7 @@ export default function Page() {
                 <div className="text-3xl mb-4">💸</div>
                 <h3 className="font-semibold mb-2">Chasing Payments</h3>
                 <p className="text-base-content/60 text-sm">
-                  &quot;Did you Venmo me?&quot; &quot;Check&apos;s in the mail&quot; &quot;Can I pay cash?&quot; 
+                  &quot;Did you Venmo me?&quot; &quot;Check&apos;s in the mail&quot; &quot;Can I pay cash?&quot;
                   You&apos;re not a collections agency.
                 </p>
               </div>
@@ -101,7 +101,7 @@ export default function Page() {
                 <div className="text-3xl mb-4">📊</div>
                 <h3 className="font-semibold mb-2">Spreadsheet Chaos</h3>
                 <p className="text-base-content/60 text-sm">
-                  RSVPs in one sheet, payments in another, email list somewhere else. 
+                  RSVPs in one sheet, payments in another, email list somewhere else.
                   Which version is correct?
                 </p>
               </div>
@@ -109,7 +109,7 @@ export default function Page() {
                 <div className="text-3xl mb-4">📧</div>
                 <h3 className="font-semibold mb-2">BCC Nightmares</h3>
                 <p className="text-base-content/60 text-sm">
-                  Mass emailing 100 parents from Gmail? Missing someone? 
+                  Mass emailing 100 parents from Gmail? Missing someone?
                   Reply-all disasters?
                 </p>
               </div>
@@ -136,7 +136,7 @@ export default function Page() {
                 </div>
                 <h3 className="font-semibold mb-2">Event Ticketing</h3>
                 <p className="text-base-content/60 text-sm">
-                  Sell tickets to galas, fundraiser dinners, and parent nights. 
+                  Sell tickets to galas, fundraiser dinners, and parent nights.
                   QR codes, Apple Pay, automatic confirmations.
                 </p>
               </div>
@@ -147,7 +147,7 @@ export default function Page() {
                 </div>
                 <h3 className="font-semibold mb-2">Donation Campaigns</h3>
                 <p className="text-base-content/60 text-sm">
-                  Launch playground funds, scholarship drives, or emergency appeals. 
+                  Launch playground funds, scholarship drives, or emergency appeals.
                   Progress bars, donor walls, recurring gifts.
                 </p>
               </div>
@@ -158,7 +158,7 @@ export default function Page() {
                 </div>
                 <h3 className="font-semibold mb-2">Contact Management</h3>
                 <p className="text-base-content/60 text-sm">
-                  Import your parent list with one CSV. Tag, segment, and organize. 
+                  Import your parent list with one CSV. Tag, segment, and organize.
                   No more outdated spreadsheets.
                 </p>
               </div>
@@ -169,7 +169,7 @@ export default function Page() {
                 </div>
                 <h3 className="font-semibold mb-2">Email Campaigns</h3>
                 <p className="text-base-content/60 text-sm">
-                  Send beautiful announcements to all parents or targeted groups. 
+                  Send beautiful announcements to all parents or targeted groups.
                   No BCC disasters, unsubscribe built-in.
                 </p>
               </div>
@@ -180,7 +180,7 @@ export default function Page() {
                 </div>
                 <h3 className="font-semibold mb-2">Instant Payouts</h3>
                 <p className="text-base-content/60 text-sm">
-                  Money hits your bank in 2 days. Clear fee breakdown, 
+                  Money hits your bank in 2 days. Clear fee breakdown,
                   monthly statements, tax receipts for donors.
                 </p>
               </div>
@@ -191,7 +191,7 @@ export default function Page() {
                 </div>
                 <h3 className="font-semibold mb-2">Mobile-First</h3>
                 <p className="text-base-content/60 text-sm">
-                  Parents buy tickets from their phone in 30 seconds. 
+                  Parents buy tickets from their phone in 30 seconds.
                   Apple Pay, Google Pay, credit cards.
                 </p>
               </div>
@@ -211,13 +211,26 @@ export default function Page() {
               </p>
             </div>
 
+            <div className="flex justify-center mb-12">
+              <div className="bg-base-100 border-2 border-primary/20 p-4 rounded-lg flex items-center gap-4 shadow-lg max-w-lg mx-auto transform hover:scale-105 transition-transform duration-200">
+                <div className="bg-yellow-100 p-2 rounded-full">
+                  <span className="text-xl">🚀</span>
+                </div>
+                <div className="text-left">
+                  <h3 className="font-bold text-lg">Launch Special</h3>
+                  <p className="text-base-content/80 text-sm">
+                    Early adopter pricing applies to the <span className="font-bold text-primary">first 100 customers</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
               {config.stripe.plans.map((plan) => (
                 <div
                   key={plan.name}
-                  className={`bg-base-100 rounded-box p-6 shadow ${
-                    plan.isFeatured ? "ring-2 ring-primary" : ""
-                  }`}
+                  className={`bg-base-100 rounded-box p-6 shadow ${plan.isFeatured ? "ring-2 ring-primary" : ""
+                    }`}
                 >
                   {plan.isFeatured && (
                     <div className="badge badge-primary mb-4">Most Popular</div>
@@ -247,9 +260,8 @@ export default function Page() {
                   </ul>
                   <button
                     onClick={() => setIsWaitlistOpen(true)}
-                    className={`btn w-full ${
-                      plan.isFeatured ? "btn-primary" : "btn-outline"
-                    }`}
+                    className={`btn w-full ${plan.isFeatured ? "btn-primary" : "btn-outline"
+                      }`}
                   >
                     Join Waitlist
                   </button>
@@ -275,7 +287,7 @@ export default function Page() {
               Be among the first daycares to simplify their fundraising.
               Set up your first fundraiser in under 10 minutes.
             </p>
-            <button 
+            <button
               onClick={() => setIsWaitlistOpen(true)}
               className="btn btn-primary btn-lg"
             >
