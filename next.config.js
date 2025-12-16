@@ -22,6 +22,11 @@ const nextConfig = {
       },
     ],
   },
+  env: {
+    // Expose these so config.js can read them on the client side without NEXT_PUBLIC prefix
+    STRIPE_STARTER_PRICE_ID: process.env.STRIPE_STARTER_PRICE_ID,
+    STRIPE_GROWTH_PRICE_ID: process.env.STRIPE_GROWTH_PRICE_ID,
+  },
   webpack: (config, { webpack, isServer }) => {
     // Ignore MongoDB's optional dependencies to prevent build warnings
     if (isServer) {

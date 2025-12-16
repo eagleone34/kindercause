@@ -18,7 +18,7 @@ const config = {
       {
         // REQUIRED — we use this to find the plan in the webhook (for instance if you want to update the user's credits based on the plan)
         priceId:
-          process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID || "price_starter_placeholder",
+          process.env.STRIPE_STARTER_PRICE_ID || "price_starter_placeholder",
         //  REQUIRED - Name of the plan, displayed on the pricing page
         name: "Starter",
         // A friendly description of the plan, displayed on the pricing page. Tip: explain why this plan and not others
@@ -39,7 +39,7 @@ const config = {
         // This plan will look different on the pricing page, it will be highlighted. You can only have one plan with isFeatured: true
         isFeatured: true,
         priceId:
-          process.env.NEXT_PUBLIC_STRIPE_GROWTH_PRICE_ID || "price_growth_placeholder",
+          process.env.STRIPE_GROWTH_PRICE_ID || "price_growth_placeholder",
         name: "Growth",
         description: "For growing daycares with more frequent fundraising",
         price: 99,
