@@ -177,6 +177,8 @@ async function handleSubscriptionPurchase(session, supabase, stripe) {
   const customerEmail = session.customer_details?.email;
   const customerName = session.customer_details?.name || "New User";
 
+  console.log("--> Webhook: Handling Subscription for:", customerEmail);
+
   // Get the price ID from line items
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
   const priceId = lineItems.data[0]?.price?.id;
@@ -193,7 +195,7 @@ async function handleSubscriptionPurchase(session, supabase, stripe) {
   // If no userId (user wasn't logged in), find or create user
   if (!userId && customerEmail) {
     // 1. Check if user exists by email
-    const { data: existingUser } = await supabase.auth.admin.listUsers();
+    await supabase.auth.admin.listUsers();
     // filtered listUsers is not efficient for production but okay for prototype. 
     // Better: supabase.rpc or rely on createUser failure if unique constraint?
     // Actually, listUsers doesn't filter by email easily without pagination.

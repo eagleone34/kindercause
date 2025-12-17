@@ -22,7 +22,7 @@ export default function Success() {
                     </div>
 
                     <p className="text-sm">
-                        Didn't receive an email? Check your spam folder or contact support.
+                        Didn&apos;t receive an email? Check your spam folder or contact support.
                     </p>
                 </div>
 
