@@ -2,22 +2,40 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import Stripe from "stripe";
 import { createAdminSupabaseClient } from "@/libs/supabase";
+import { sendWelcomeEmail } from "@/libs/resend";
 import configFile from "@/config";
+import fs from "fs";
+import path from "path";
 
 // Initialize Stripe only if the secret key is available
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
   : null;
+if (!stripe) console.error("Stripe failed to initialize. Check STRIPE_SECRET_KEY.");
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+const LOG_FILE = path.join(process.cwd(), "webhook-debug.log");
+
+function logToFile(message) {
+  const timestamp = new Date().toISOString();
+  const logLine = `[${timestamp}] ${message}\n`;
+  try {
+    fs.appendFileSync(LOG_FILE, logLine);
+  } catch (err) {
+    // console.error("Failed to write to log file:", err);
+  }
+}
 
 // Stripe webhook handler for KinderCause
 // Handles both subscription payments (for SaaS) and one-time payments (tickets/donations)
 export async function POST(req) {
+  logToFile("Received Webhook Request");
+
   // Check if Stripe is configured
   if (!stripe || !webhookSecret) {
-    console.error(
-      "Stripe is not configured properly. Missing STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET"
-    );
+    const msg = "Stripe is not configured properly. Missing STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET";
+    logToFile(msg);
+    console.error(msg);
     return NextResponse.json(
       { error: "Stripe configuration missing" },
       { status: 500 }
@@ -33,12 +51,18 @@ export async function POST(req) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
-    console.error(`Webhook signature verification failed. ${err.message}`);
+    const msg = `Webhook signature verification failed. ${err.message}`;
+    logToFile(msg);
+    console.error(msg);
     return NextResponse.json({ error: err.message }, { status: 400 });
   }
 
   const data = event.data;
   const eventType = event.type;
+
+  logToFile(`Processing event: ${eventType} | ID: ${event.id}`);
+  logToFile(`DEBUG: Webhook Key: ${process.env.STRIPE_SECRET_KEY?.slice(0, 10)}...`);
+  console.log(`DEBUG: Webhook Key: ${process.env.STRIPE_SECRET_KEY?.slice(0, 10)}...`);
 
   const supabase = createAdminSupabaseClient();
 
@@ -50,9 +74,11 @@ export async function POST(req) {
 
         // Check if this is a fundraiser purchase (ticket/donation)
         if (metadata.fundraiser_id) {
+          logToFile(`Handling Fundraiser Purchase: ${metadata.fundraiser_id}`);
           await handleFundraiserPurchase(session, supabase);
         } else {
           // This is a SaaS subscription - handle user access
+          logToFile("Handling Subscription Purchase");
           await handleSubscriptionPurchase(session, supabase, stripe);
         }
         break;
@@ -61,11 +87,13 @@ export async function POST(req) {
       case "checkout.session.expired": {
         // User didn't complete the transaction
         // Could send reminder email
+        logToFile("Session expired");
         break;
       }
 
       case "customer.subscription.updated": {
         // Subscription changed (upgrade/downgrade/cancel pending)
+        logToFile("Subscription updated");
         break;
       }
 
@@ -85,6 +113,7 @@ export async function POST(req) {
 
       case "invoice.payment_failed": {
         // Payment failed - could send warning email
+        logToFile("Invoice payment failed");
         break;
       }
 
@@ -96,13 +125,16 @@ export async function POST(req) {
       }
 
       default:
+        logToFile(`Unhandled event type: ${eventType}`);
       // Unhandled event type
     }
   } catch (e) {
-    console.error(
-      "Stripe webhook error: " + e.message + " | EVENT TYPE: " + eventType
-    );
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    const msg = "Stripe webhook error: " + e.message + " | EVENT TYPE: " + eventType;
+    logToFile(msg);
+    logToFile(e.stack); // Log stack trace
+    console.error(msg);
+    console.error(e.stack);
+    return NextResponse.json({ error: e.message, stack: e.stack }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
@@ -159,6 +191,7 @@ async function handleFundraiserPurchase(session, supabase) {
   });
 
   if (purchaseError) {
+    logToFile(`Error recording purchase: ${purchaseError.message}`);
     console.error("Error recording purchase:", purchaseError);
     throw purchaseError;
   }
@@ -166,6 +199,7 @@ async function handleFundraiserPurchase(session, supabase) {
   // TODO: Send confirmation email with QR code (for events)
   // TODO: Send tax receipt (for donations to nonprofits)
 
+  logToFile(`✅ Recorded ${type} purchase: $${amountTotal} for fundraiser ${fundraiserId}`);
   console.log(
     `✅ Recorded ${type} purchase: $${amountTotal} for fundraiser ${fundraiserId}`
   );
@@ -173,84 +207,159 @@ async function handleFundraiserPurchase(session, supabase) {
 
 // Handle SaaS subscription purchases
 async function handleSubscriptionPurchase(session, supabase, stripe) {
+  logToFile("--> START: handleSubscriptionPurchase");
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    logToFile("❌ FATAL: SUPABASE_SERVICE_ROLE_KEY is missing from environment variables.");
+    console.error("❌ FATAL: SUPABASE_SERVICE_ROLE_KEY is missing from environment variables.");
+    return;
+  }
+
   const customerId = session.customer;
   const customerEmail = session.customer_details?.email;
   const customerName = session.customer_details?.name || "New User";
 
-  console.log("--> Webhook: Handling Subscription for:", customerEmail);
+  logToFile(`-- Customer: ${customerEmail} (${customerId})`);
+  console.log(`-- Customer: ${customerEmail} (${customerId})`);
 
   // Get the price ID from line items
-  const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
-  const priceId = lineItems.data[0]?.price?.id;
+  // Try to get from API first, fall back to session object if that fails
+  let priceId = null;
+
+  try {
+    // First try to get from session object directly (if expanded or included)
+    if (session.line_items?.data?.[0]?.price?.id) {
+      priceId = session.line_items.data[0].price.id;
+      logToFile(`-- Got Price ID from session.line_items: ${priceId}`);
+    } else if (session.display_items?.[0]?.plan?.id) {
+      // Older API format
+      priceId = session.display_items[0].plan.id;
+      logToFile(`-- Got Price ID from session.display_items: ${priceId}`);
+    } else {
+      // Fall back to API call
+      logToFile(`-- Fetching line items from Stripe API for session: ${session.id}`);
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+      priceId = lineItems.data[0]?.price?.id;
+      logToFile(`-- Got Price ID from API: ${priceId}`);
+    }
+  } catch (lineItemError) {
+    logToFile(`-- Error fetching line items: ${lineItemError.message}`);
+    console.error(`-- Error fetching line items: ${lineItemError.message}`);
+
+    // As a last resort, check if there's any subscription info in the session
+    if (session.subscription) {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(session.subscription);
+        priceId = subscription.items.data[0]?.price?.id;
+        logToFile(`-- Got Price ID from subscription: ${priceId}`);
+      } catch (subError) {
+        logToFile(`-- Error fetching subscription: ${subError.message}`);
+      }
+    }
+  }
+
+  logToFile(`-- Received Price ID: ${priceId}`);
+  console.log(`-- Received Price ID: ${priceId}`);
 
   // Find the plan
   const plan = configFile.stripe.plans.find((p) => p.priceId === priceId);
+  logToFile(`-- Configured Plans: ${configFile.stripe.plans.map(p => p.priceId).join(", ")}`);
+  console.log(`-- Configured Plans: ${configFile.stripe.plans.map(p => p.priceId).join(", ")}`);
+
+  // If plan not found but we have customer details, still create the user
+  // (They might be on a plan not in config.js, or using a triggered test event)
   if (!plan) {
-    console.log("No matching plan found for priceId:", priceId);
-    return;
+    logToFile(`⚠️ No matching plan found for priceId: ${priceId}. Will still create user if email exists.`);
+    console.warn(`⚠️ No matching plan found for priceId: ${priceId}. Will still create user if email exists.`);
+    // Don't return - continue to create user anyways for testing
+  } else {
+    logToFile(`-- Found Plan: ${plan.name}`);
+    console.log(`-- Found Plan: ${plan.name}`);
   }
 
   let userId = session.client_reference_id;
+  logToFile(`-- Client Reference ID (User ID): ${userId || "None (New/Unlinked User)"}`);
+  console.log(`-- Client Reference ID (User ID): ${userId || "None (New/Unlinked User)"}`);
 
   // If no userId (user wasn't logged in), find or create user
   if (!userId && customerEmail) {
-    // 1. Check if user exists by email
-    await supabase.auth.admin.listUsers();
-    // filtered listUsers is not efficient for production but okay for prototype. 
-    // Better: supabase.rpc or rely on createUser failure if unique constraint?
-    // Actually, listUsers doesn't filter by email easily without pagination.
-    // Let's try creating the user directly. If it fails with "User already registered", we fetch their ID.
+    logToFile("-- Attempting to Find or Create User...");
+    console.log("-- Attempting to Find or Create User...");
 
-    // Attempt to create user with auto-confirmed email (since they paid)
+    // 1. Attempt to create user with auto-confirmed email
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: customerEmail,
       email_confirm: true,
-      user_metadata: { name: customerName }
+      user_metadata: { name: customerName },
     });
 
     if (newUser?.user) {
       userId = newUser.user.id;
+      logToFile(`✅ Created new user for ${customerEmail}: ${userId}`);
       console.log(`✅ Created new user for ${customerEmail}: ${userId}`);
+    } else {
+      logToFile(`-- Create User Failed (Likely Exists): ${createError?.message}`);
+      console.log(`-- Create User Failed (Likely Exists): ${createError?.message}`);
+      logToFile("-- Attempting to find existing user via listUsers...");
+      console.log("-- Attempting to find existing user via listUsers...");
 
-      // Send password reset email so they can log in
-      await supabase.auth.resetPasswordForEmail(customerEmail, {
-        redirectTo: `${configFile.domainName ? `https://${configFile.domainName}` : ""}/dashboard/settings`,
-      });
-    } else if (createError) {
-      console.log("User might already exist, attempting to find...", createError.message);
-      // If creation failed, likely they exist. We need to find their ID.
-      // Since we are admin, we can list users. Ideally we'd have a getUserByEmail function but admin API has listUsers.
-      // We can rely on the error message or try to sign in (not possible).
-      // Let's assume they exist and try to fetch via listUsers (WARNING: this is not performant for large DBs, but Supabase admin has 'getUserById'. 'listUsers' supports query?)
-      // Currently Supabase JS Admin doesn't have getUserByEmail. 
-      // Workaround: We will skip linking if we can't find them, OR (better) we just let them log in and restore purchase? 
-      // BETTER: We can search the `auth.users` via a direct DB query if we had access, but here we use the client.
-      // Let's iterate page 1 (likely fine for now) or ERROR out.
-      // WAIT: We can use `getUserByEmail` IS available in newer Supabase versions or we can use the `rpc` if setup.
-      // Let's fallback to: If we can't create, we can't link effectively without ID. 
-      // ACTUALLY: The `createError` often contains the ID if it says "User already registered"? No.
-      // Re-reading docs: `createUser` throws if exists.
+      // 2. If creation failed, find existing user by email
+      const { data, error: listError } = await supabase.auth.admin.listUsers();
 
-      // Alternative: Just fail gracefully for now. Use the email to send a "Link your subscription" notice?
-      // Let's assume for this MVP we only handle NEW users. If they exist, they should have logged in.
-      // But we can try to find them in our public 'users' table if we had one (we don't, we have `organizations`).
-      // Wait, we have `organizations`. We can search `organizations` (which has user_id) where user email matches? 
-      // Organizations doesn't have email. `auth.users` is hidden.
+      if (listError) {
+        logToFile(`❌ Error listing users: ${listError.message}`);
+        console.error(`❌ Error listing users: ${listError.message}`);
+      } else {
+        // Robust handling of listUsers response structure
+        const users = data?.users || data || [];
+        const foundUser = users.find(u => u.email === customerEmail);
+        if (foundUser) {
+          userId = foundUser.id;
+          logToFile(`✅ Found existing user ID: ${userId}`);
+          console.log(`✅ Found existing user ID: ${userId}`);
+        } else {
+          logToFile(`⚠️ Could not find user ${customerEmail} in listUsers even after creation failed.`);
+          console.warn(`⚠️ Could not find user ${customerEmail} in listUsers even after creation failed.`);
+        }
+      }
+    }
 
-      console.warn("Could not create user, they may already exist. Linking failed.");
-      return;
+    // 3. Send Welcome Email via Resend (no verification code - users sign in when ready)
+    if (customerEmail) {
+      try {
+        logToFile("-- Sending Welcome Email...");
+        console.log("-- Sending Welcome Email...");
+        await sendWelcomeEmail({
+          to: customerEmail,
+          customerName: customerName,
+          planName: plan?.name || 'Starter',
+        });
+        logToFile(`📧 Welcome email sent to ${customerEmail}`);
+        console.log(`📧 Welcome email sent to ${customerEmail}`);
+      } catch (emailError) {
+        logToFile(`⚠️ Error sending welcome email: ${emailError.message}`);
+        console.error(`⚠️ Error sending welcome email: ${emailError.message}`);
+        // Don't throw - welcome email is not critical
+      }
     }
   }
 
   if (userId) {
     // Check if organization exists for this user
-    const { data: orgs } = await supabase
+    const { data: orgs, error: orgFetchError } = await supabase
       .from("organizations")
       .select("id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle(); // Use maybeSingle to avoid error if 0 rows
+
+    if (orgFetchError) {
+      logToFile(`❌ Error checking organizations: ${orgFetchError.message}`);
+      console.error(`❌ Error checking organizations: ${orgFetchError.message}`);
+    }
 
     if (orgs) {
+      logToFile(`-- Updating existing organization ${orgs.id}`);
+      console.log(`-- Updating existing organization ${orgs.id}`);
       // Update existing organization
       const { error } = await supabase
         .from("organizations")
@@ -258,12 +367,21 @@ async function handleSubscriptionPurchase(session, supabase, stripe) {
           stripe_customer_id: customerId,
           subscription_status: "active",
           price_id: priceId,
-          plan_name: plan.name,
+          plan_name: plan?.name || 'Unknown Plan',
         })
         .eq("user_id", userId);
 
-      if (error) console.error("Error updating organization:", error);
+      if (error) {
+        logToFile(`❌ Error updating organization: ${error.message}`);
+        console.error("❌ Error updating organization:", error);
+      }
+      else {
+        logToFile("✅ Organization updated.");
+        console.log("✅ Organization updated.");
+      }
     } else {
+      logToFile("-- Creating new organization...");
+      console.log("-- Creating new organization...");
       // Create NEW organization for this user
       const orgName = customerName && customerName !== "New User" ? `${customerName}'s Daycare` : "My Daycare";
       const slug = `daycare-${Math.random().toString(36).substring(2, 8)}`; // generic slug
@@ -275,16 +393,23 @@ async function handleSubscriptionPurchase(session, supabase, stripe) {
         stripe_customer_id: customerId,
         subscription_status: "active",
         price_id: priceId,
-        plan_name: plan.name,
+        plan_name: plan?.name || 'Unknown Plan',
         is_nonprofit: false
       });
 
-      if (error) console.error("Error creating organization:", error);
-      else console.log(`✅ Created new organization for user ${userId}`);
+      if (error) {
+        logToFile(`❌ Error creating organization: ${error.message}`);
+        console.error("❌ Error creating organization:", error);
+      }
+      else {
+        logToFile(`✅ Created new organization for user ${userId}`);
+        console.log(`✅ Created new organization for user ${userId}`);
+      }
     }
   }
 
-  console.log(`✅ Subscription activated: ${plan.name} for customer ${customerId}`);
+  logToFile(`✅ Subscription activated: ${plan?.name || 'Unknown Plan'} for customer ${customerId}`);
+  console.log(`✅ Subscription activated: ${plan?.name || 'Unknown Plan'} for customer ${customerId}`);
 }
 
 // Handle subscription cancellation
@@ -299,9 +424,11 @@ async function handleSubscriptionCanceled(subscription, supabase) {
     .eq("stripe_customer_id", customerId);
 
   if (error) {
+    logToFile(`Error updating canceled subscription: ${error.message}`);
     console.error("Error updating canceled subscription:", error);
   }
 
+  logToFile(`❌ Subscription canceled for customer ${customerId}`);
   console.log(`❌ Subscription canceled for customer ${customerId}`);
 }
 
@@ -318,8 +445,10 @@ async function handleInvoicePaid(invoice, supabase) {
     .eq("stripe_customer_id", customerId);
 
   if (error) {
+    logToFile(`Error updating invoice paid: ${error.message}`);
     console.error("Error updating invoice paid:", error);
   }
+  logToFile("Invoice paid and organization updated.");
 }
 
 // Handle refunds
@@ -337,8 +466,10 @@ async function handleRefund(charge, supabase) {
     .eq("stripe_payment_id", paymentIntentId);
 
   if (error) {
+    logToFile(`Error updating refund: ${error.message}`);
     console.error("Error updating refund:", error);
   }
 
+  logToFile(`💰 Refund processed for payment ${paymentIntentId}`);
   console.log(`💰 Refund processed for payment ${paymentIntentId}`);
 }

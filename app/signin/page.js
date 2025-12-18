@@ -210,12 +210,12 @@ function SignInContent() {
               {view === "login" ? (
                 <p className="text-sm">
                   Don&apos;t have an account?{" "}
-                  <button
-                    onClick={() => { setView("signup"); setError(""); }}
+                  <Link
+                    href="/#pricing"
                     className="link link-primary font-medium"
                   >
                     Sign up
-                  </button>
+                  </Link>
                 </p>
               ) : (
                 <p className="text-sm">

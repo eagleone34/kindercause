@@ -1,6 +1,20 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/libs/auth";
 import { createCheckout } from "@/libs/stripe";
+import fs from "fs";
+import path from "path";
+
+const LOG_FILE = path.join(process.cwd(), "webhook-debug.log");
+
+function logToFile(message) {
+  const timestamp = new Date().toISOString();
+  const logLine = `[${timestamp}] ${message}\n`;
+  try {
+    fs.appendFileSync(LOG_FILE, logLine);
+  } catch (err) {
+    // console.error("Failed to write to log file:", err);
+  }
+}
 
 // This function is used to create a Stripe Checkout Session (one-time payment or subscription)
 // It's called by the <ButtonCheckout /> component
@@ -31,6 +45,12 @@ export async function POST(req) {
   try {
     const session = await auth();
 
+    // DEBUG LOGGING
+    const key = process.env.STRIPE_SECRET_KEY;
+    const masked = key ? key.slice(0, 10) + "..." : "MISSING";
+    logToFile(`DEBUG: create-checkout Key: ${masked}`);
+    console.log(`DEBUG: create-checkout Key: ${masked}`);
+
     const { priceId, mode, successUrl, cancelUrl } = body;
 
     const stripeSessionURL = await createCheckout({
@@ -47,6 +67,7 @@ export async function POST(req) {
     return NextResponse.json({ url: stripeSessionURL });
   } catch (e) {
     console.error(e);
+    logToFile(`ERROR in create-checkout: ${e.message}`);
     return NextResponse.json({ error: e?.message }, { status: 500 });
   }
 }
