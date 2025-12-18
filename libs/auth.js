@@ -25,6 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_ID,
       clientSecret: process.env.GOOGLE_SECRET,
+      allowDangerousEmailAccountLinking: true,
       async profile(profile) {
         return {
           id: profile.sub,
@@ -38,10 +39,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Resend({
       apiKey: process.env.RESEND_API_KEY,
       from: config.resend.fromNoReply,
-      // Generate 6-digit OTP code
-      generateVerificationToken: () => {
-        return Math.floor(100000 + Math.random() * 900000).toString();
-      },
       sendVerificationRequest: async ({ identifier: email, url, token }) => {
         const resend = new ResendSDK(process.env.RESEND_API_KEY);
 

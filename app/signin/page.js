@@ -186,7 +186,7 @@ function SignInContent() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value.toLowerCase())}
                   placeholder="you@yourdaycare.com"
                   className="input input-bordered w-full"
                   required
