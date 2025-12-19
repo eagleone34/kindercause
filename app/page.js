@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import config from "@/config";
 import BookDemoModal from "@/components/BookDemoModal";
 import ButtonCheckout from "@/components/ButtonCheckout";
 
 export default function Page() {
+  const { data: session, status } = useSession();
   const [isDemoOpen, setIsDemoOpen] = useState(false);
 
   return (
@@ -32,9 +34,17 @@ export default function Page() {
           <Link href="#features" className="btn btn-ghost btn-sm hidden sm:flex">
             Features
           </Link>
-          <Link href="/signin" className="btn btn-ghost btn-sm">
-            Login
-          </Link>
+          {status === "loading" ? (
+            <span className="loading loading-spinner loading-sm" />
+          ) : session ? (
+            <Link href="/dashboard" className="btn btn-primary btn-sm">
+              Dashboard
+            </Link>
+          ) : (
+            <Link href="/signin" className="btn btn-ghost btn-sm">
+              Login
+            </Link>
+          )}
         </div>
       </header>
 
