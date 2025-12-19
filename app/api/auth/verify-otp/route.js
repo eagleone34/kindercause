@@ -164,10 +164,13 @@ export async function POST(req) {
 
         // Set the session cookie
         const cookieStore = await cookies();
-        cookieStore.set("authjs.session-token", sessionToken, {
+        const isProduction = process.env.NODE_ENV === "production";
+        const cookieName = isProduction ? "__Secure-authjs.session-token" : "authjs.session-token";
+
+        cookieStore.set(cookieName, sessionToken, {
             expires: sessionExpiry,
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: isProduction,
             sameSite: "lax",
             path: "/",
         });
