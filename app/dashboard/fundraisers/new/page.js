@@ -49,8 +49,8 @@ export default function NewFundraiserPage() {
       });
 
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create fundraiser");
+        const data = await res.json();
+        throw new Error(data.error || "Failed to create fundraiser");
       }
 
       const data = await res.json();
@@ -90,11 +90,10 @@ export default function NewFundraiserPage() {
           <h2 className="font-semibold mb-4">Fundraiser Type</h2>
           <div className="grid grid-cols-2 gap-4">
             <label
-              className={`cursor-pointer border-2 rounded-lg p-4 text-center transition-colors ${
-                isEvent
+              className={`cursor-pointer border-2 rounded-lg p-4 text-center transition-colors ${isEvent
                   ? "border-primary bg-primary/5"
                   : "border-base-300 hover:border-base-content/30"
-              }`}
+                }`}
             >
               <input
                 type="radio"
@@ -111,11 +110,10 @@ export default function NewFundraiserPage() {
               </div>
             </label>
             <label
-              className={`cursor-pointer border-2 rounded-lg p-4 text-center transition-colors ${
-                !isEvent
+              className={`cursor-pointer border-2 rounded-lg p-4 text-center transition-colors ${!isEvent
                   ? "border-primary bg-primary/5"
                   : "border-base-300 hover:border-base-content/30"
-              }`}
+                }`}
             >
               <input
                 type="radio"
