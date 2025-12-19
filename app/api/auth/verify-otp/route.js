@@ -23,20 +23,10 @@ export async function POST(req) {
             .update(`${normalizedCode}${process.env.NEXTAUTH_SECRET}`)
             .digest("hex");
 
-        console.log("Verify OTP - Looking for:", { normalizedEmail, normalizedCode, hashedCode });
-
         const supabase = createAdminSupabaseClient();
 
-        // Debug: Check all tokens for this email
-        const { data: allTokens } = await supabase
-            .schema("next_auth")
-            .from("verification_tokens")
-            .select("*");
-
-        console.log("All verification tokens in DB:", allTokens);
-
         // Try with hashed token first
-        let { data: tokenData, error: tokenError } = await supabase
+        let { data: tokenData } = await supabase
             .schema("next_auth")
             .from("verification_tokens")
             .select("*")
@@ -44,7 +34,7 @@ export async function POST(req) {
             .eq("token", hashedCode)
             .single();
 
-        // If not found with hash, try raw code (in case hashing is disabled)
+        // If not found with hash, try raw code (fallback)
         if (!tokenData) {
             const { data: rawMatch } = await supabase
                 .schema("next_auth")
@@ -56,10 +46,7 @@ export async function POST(req) {
             tokenData = rawMatch;
         }
 
-        console.log("Token lookup result:", { tokenData, tokenError });
-
         if (!tokenData) {
-            console.error("Token not found. Email:", normalizedEmail, "Code:", normalizedCode, "Hashed:", hashedCode);
             return NextResponse.json(
                 { error: "Invalid or expired verification code" },
                 { status: 400 }
