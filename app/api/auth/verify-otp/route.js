@@ -16,10 +16,20 @@ export async function POST(req) {
         const normalizedEmail = email.toLowerCase().trim();
         const normalizedCode = code.trim();
 
+        console.log("Verify OTP - Looking for:", { normalizedEmail, normalizedCode });
+
         const supabase = createAdminSupabaseClient();
 
-        // Look up the verification token
-        const { data: tokenData, error: tokenError } = await supabase
+        // Debug: Check all tokens for this email
+        const { data: allTokens } = await supabase
+            .schema("next_auth")
+            .from("verification_tokens")
+            .select("*");
+
+        console.log("All verification tokens in DB:", allTokens);
+
+        // Try exact match first
+        let { data: tokenData, error: tokenError } = await supabase
             .schema("next_auth")
             .from("verification_tokens")
             .select("*")
@@ -27,8 +37,22 @@ export async function POST(req) {
             .eq("token", normalizedCode)
             .single();
 
-        if (tokenError || !tokenData) {
-            console.error("Token lookup error:", tokenError);
+        // If not found, try case-insensitive match on identifier
+        if (!tokenData) {
+            const { data: caseMatch } = await supabase
+                .schema("next_auth")
+                .from("verification_tokens")
+                .select("*")
+                .ilike("identifier", normalizedEmail)
+                .eq("token", normalizedCode)
+                .single();
+            tokenData = caseMatch;
+        }
+
+        console.log("Token lookup result:", { tokenData, tokenError });
+
+        if (!tokenData) {
+            console.error("Token not found. Email:", normalizedEmail, "Code:", normalizedCode);
             return NextResponse.json(
                 { error: "Invalid or expired verification code" },
                 { status: 400 }
