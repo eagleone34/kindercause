@@ -90,16 +90,37 @@ function SignInContent() {
     }
   };
 
-  const handleVerifyCode = (e) => {
+  const handleVerifyCode = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    // Manually construct the callback URL to verify the token
-    const verificationUrl = `/api/auth/callback/resend?callbackUrl=${encodeURIComponent(callbackUrl)}&token=${code.trim()}&email=${encodeURIComponent(email.trim().toLowerCase())}`;
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          code: code.trim(),
+          callbackUrl,
+        }),
+      });
 
-    // Redirect to the verification URL
-    router.push(verificationUrl);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Verification failed. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Redirect to dashboard on success
+      router.push(data.redirectUrl || "/dashboard");
+    } catch (err) {
+      console.error("Verification error:", err);
+      setError("An unexpected error occurred");
+      setIsLoading(false);
+    }
   };
 
   // Render Helpers
