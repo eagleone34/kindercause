@@ -108,7 +108,20 @@ export async function DELETE(req, { params }) {
             return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }
 
-        // Delete the fundraiser
+        // Check if fundraiser has any purchases
+        const { count: purchaseCount } = await supabase
+            .from("purchases")
+            .select("id", { count: "exact", head: true })
+            .eq("fundraiser_id", id);
+
+        if (purchaseCount && purchaseCount > 0) {
+            return NextResponse.json(
+                { error: "Cannot delete fundraiser with transactions. Deactivate it instead." },
+                { status: 400 }
+            );
+        }
+
+        // Delete the fundraiser (only if no purchases)
         const { error } = await supabase
             .from("fundraisers")
             .delete()

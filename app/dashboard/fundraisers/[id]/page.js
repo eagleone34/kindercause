@@ -11,10 +11,25 @@ export default function FundraiserDetailPage() {
     const [fundraiser, setFundraiser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isPublishing, setIsPublishing] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    // Transactions state
+    const [transactions, setTransactions] = useState([]);
+    const [txLoading, setTxLoading] = useState(false);
+    const [txFilter, setTxFilter] = useState("all");
+    const [txSearch, setTxSearch] = useState("");
+    const [txTotal, setTxTotal] = useState(0);
 
     useEffect(() => {
         fetchFundraiser();
     }, [params.id]);
+
+    useEffect(() => {
+        if (fundraiser) {
+            fetchTransactions();
+        }
+    }, [fundraiser, txFilter, txSearch]);
 
     const fetchFundraiser = async () => {
         try {
@@ -37,6 +52,24 @@ export default function FundraiserDetailPage() {
         }
     };
 
+    const fetchTransactions = async () => {
+        setTxLoading(true);
+        try {
+            const queryParams = new URLSearchParams();
+            if (txFilter !== "all") queryParams.set("status", txFilter);
+            if (txSearch) queryParams.set("search", txSearch);
+
+            const res = await fetch(`/api/fundraisers/${params.id}/transactions?${queryParams}`);
+            const data = await res.json();
+            setTransactions(data.transactions || []);
+            setTxTotal(data.total || 0);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setTxLoading(false);
+        }
+    };
+
     const handlePublish = async () => {
         setIsPublishing(true);
         try {
@@ -46,9 +79,7 @@ export default function FundraiserDetailPage() {
                 body: JSON.stringify({ status: "active" }),
             });
 
-            if (!res.ok) {
-                throw new Error("Failed to publish");
-            }
+            if (!res.ok) throw new Error("Failed to publish");
 
             toast.success("Fundraiser published!");
             setFundraiser((prev) => ({ ...prev, status: "active" }));
@@ -56,6 +87,48 @@ export default function FundraiserDetailPage() {
             toast.error(error.message);
         } finally {
             setIsPublishing(false);
+        }
+    };
+
+    const handleDeactivate = async () => {
+        setIsPublishing(true);
+        try {
+            const res = await fetch(`/api/fundraisers/${params.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "cancelled" }),
+            });
+
+            if (!res.ok) throw new Error("Failed to deactivate");
+
+            toast.success("Fundraiser deactivated");
+            setFundraiser((prev) => ({ ...prev, status: "cancelled" }));
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setIsPublishing(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        try {
+            const res = await fetch(`/api/fundraisers/${params.id}`, {
+                method: "DELETE",
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to delete");
+            }
+
+            toast.success("Fundraiser deleted");
+            router.push("/dashboard/fundraisers");
+        } catch (error) {
+            toast.error(error.message);
+            setShowDeleteModal(false);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -79,9 +152,41 @@ export default function FundraiserDetailPage() {
     }
 
     const isEvent = fundraiser.type === "event";
+    const hasTransactions = txTotal > 0;
+    const canDelete = fundraiser.status === "draft" || !hasTransactions;
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="modal modal-open">
+                    <div className="modal-box">
+                        <h3 className="font-bold text-lg">Delete Fundraiser?</h3>
+                        <p className="py-4">
+                            Are you sure you want to delete &quot;{fundraiser.name}&quot;? This action cannot be undone.
+                        </p>
+                        <div className="modal-action">
+                            <button
+                                className="btn btn-ghost"
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={isDeleting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn btn-error"
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting && <span className="loading loading-spinner loading-sm" />}
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                    <div className="modal-backdrop" onClick={() => setShowDeleteModal(false)} />
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <Link href="/dashboard/fundraisers" className="btn btn-ghost btn-sm">
@@ -99,7 +204,10 @@ export default function FundraiserDetailPage() {
                         {isEvent ? "Event" : "Donation Campaign"}
                     </p>
                 </div>
-                <span className={`badge ${fundraiser.status === "active" ? "badge-success" : "badge-ghost"}`}>
+                <span className={`badge ${fundraiser.status === "active" ? "badge-success" :
+                        fundraiser.status === "cancelled" ? "badge-error" :
+                            "badge-ghost"
+                    }`}>
                     {fundraiser.status}
                 </span>
             </div>
@@ -128,20 +236,20 @@ export default function FundraiserDetailPage() {
                     <>
                         <div className="stat">
                             <div className="stat-title">Raised</div>
-                            <div className="stat-value text-success">${(fundraiser.amount_raised || 0).toLocaleString()}</div>
+                            <div className="stat-value text-success">${(fundraiser.current_amount || 0).toLocaleString()}</div>
                         </div>
                         {fundraiser.goal_amount && (
                             <div className="stat">
                                 <div className="stat-title">Goal</div>
                                 <div className="stat-value">${fundraiser.goal_amount.toLocaleString()}</div>
                                 <div className="stat-desc">
-                                    {Math.round(((fundraiser.amount_raised || 0) / fundraiser.goal_amount) * 100)}% complete
+                                    {Math.round(((fundraiser.current_amount || 0) / fundraiser.goal_amount) * 100)}% complete
                                 </div>
                             </div>
                         )}
                         <div className="stat">
-                            <div className="stat-title">Donors</div>
-                            <div className="stat-value">{fundraiser.donor_count || 0}</div>
+                            <div className="stat-title">Transactions</div>
+                            <div className="stat-value">{txTotal}</div>
                         </div>
                     </>
                 )}
@@ -178,11 +286,80 @@ export default function FundraiserDetailPage() {
                 </div>
             </div>
 
+            {/* Transactions */}
+            <div className="bg-base-100 rounded-box shadow p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <h2 className="font-semibold text-lg">Transactions ({txTotal})</h2>
+                    <div className="flex gap-2">
+                        <select
+                            className="select select-bordered select-sm"
+                            value={txFilter}
+                            onChange={(e) => setTxFilter(e.target.value)}
+                        >
+                            <option value="all">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="refunded">Refunded</option>
+                        </select>
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            className="input input-bordered input-sm w-40"
+                            value={txSearch}
+                            onChange={(e) => setTxSearch(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {txLoading ? (
+                    <div className="flex justify-center py-8">
+                        <span className="loading loading-spinner" />
+                    </div>
+                ) : transactions.length === 0 ? (
+                    <div className="text-center py-8 text-base-content/60">
+                        No transactions yet
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {transactions.map((tx) => (
+                                    <tr key={tx.id}>
+                                        <td>{new Date(tx.created_at).toLocaleDateString()}</td>
+                                        <td>{tx.purchaser_name}</td>
+                                        <td className="text-sm text-base-content/70">{tx.purchaser_email}</td>
+                                        <td className="font-medium">${tx.amount}</td>
+                                        <td>
+                                            <span className={`badge badge-sm ${tx.status === "completed" ? "badge-success" :
+                                                    tx.status === "refunded" ? "badge-warning" :
+                                                        "badge-ghost"
+                                                }`}>
+                                                {tx.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
             {/* Actions */}
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
                 <Link href={`/dashboard/fundraisers/${params.id}/edit`} className="btn btn-outline">
                     Edit
                 </Link>
+
                 {fundraiser.status === "draft" && (
                     <button
                         className="btn btn-primary"
@@ -193,8 +370,27 @@ export default function FundraiserDetailPage() {
                         {isPublishing ? "Publishing..." : "Publish"}
                     </button>
                 )}
+
+                {fundraiser.status === "active" && hasTransactions && (
+                    <button
+                        className="btn btn-warning"
+                        onClick={handleDeactivate}
+                        disabled={isPublishing}
+                    >
+                        {isPublishing && <span className="loading loading-spinner loading-sm" />}
+                        Deactivate
+                    </button>
+                )}
+
+                {canDelete && (
+                    <button
+                        className="btn btn-error btn-outline"
+                        onClick={() => setShowDeleteModal(true)}
+                    >
+                        Delete
+                    </button>
+                )}
             </div>
         </div>
     );
 }
-

@@ -124,6 +124,21 @@ export async function POST(req) {
       org = newOrg;
     }
 
+    // Check for duplicate name within organization
+    const { data: existingFundraiser } = await supabase
+      .from("fundraisers")
+      .select("id")
+      .eq("organization_id", org.id)
+      .ilike("name", name.trim())
+      .single();
+
+    if (existingFundraiser) {
+      return NextResponse.json(
+        { error: "A fundraiser with this name already exists. Please use a unique name." },
+        { status: 400 }
+      );
+    }
+
     // Generate unique slug for fundraiser
     const baseSlug = generateSlug(name);
     const slug = baseSlug + "-" + Date.now().toString(36);
