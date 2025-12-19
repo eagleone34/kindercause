@@ -16,10 +16,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     secret: process.env.SUPABASE_SERVICE_ROLE_KEY,
   }),
 
-  // Generate 6-digit OTP
-  generateVerificationToken: async () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  },
+
 
   providers: [
     GoogleProvider({

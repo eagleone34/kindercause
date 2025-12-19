@@ -52,7 +52,8 @@ function SignInContent() {
     setIsLoading(true);
 
     try {
-      const exists = await checkEmailExists(email);
+      const cleanEmail = email.trim().toLowerCase();
+      const exists = await checkEmailExists(cleanEmail);
 
       if (view === "login") {
         if (!exists) {
@@ -70,7 +71,7 @@ function SignInContent() {
 
       // Request OTP
       const res = await signIn("resend", {
-        email,
+        email: cleanEmail,
         redirect: false,
         callbackUrl
       });
@@ -95,7 +96,7 @@ function SignInContent() {
     setError("");
 
     // Manually construct the callback URL to verify the token
-    const verificationUrl = `/api/auth/callback/resend?callbackUrl=${encodeURIComponent(callbackUrl)}&token=${code}&email=${encodeURIComponent(email)}`;
+    const verificationUrl = `/api/auth/callback/resend?callbackUrl=${encodeURIComponent(callbackUrl)}&token=${code.trim()}&email=${encodeURIComponent(email.trim().toLowerCase())}`;
 
     // Redirect to the verification URL
     router.push(verificationUrl);
