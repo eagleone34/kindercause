@@ -39,6 +39,13 @@ export default function NewFundraiserPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate end date is not before start date
+    if (formData.end_date && formData.start_date && formData.end_date < formData.start_date) {
+      toast.error("End date cannot be before start date");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -91,8 +98,8 @@ export default function NewFundraiserPage() {
           <div className="grid grid-cols-2 gap-4">
             <label
               className={`cursor-pointer border-2 rounded-lg p-4 text-center transition-colors ${isEvent
-                  ? "border-primary bg-primary/5"
-                  : "border-base-300 hover:border-base-content/30"
+                ? "border-primary bg-primary/5"
+                : "border-base-300 hover:border-base-content/30"
                 }`}
             >
               <input
@@ -111,8 +118,8 @@ export default function NewFundraiserPage() {
             </label>
             <label
               className={`cursor-pointer border-2 rounded-lg p-4 text-center transition-colors ${!isEvent
-                  ? "border-primary bg-primary/5"
-                  : "border-base-300 hover:border-base-content/30"
+                ? "border-primary bg-primary/5"
+                : "border-base-300 hover:border-base-content/30"
                 }`}
             >
               <input
@@ -176,7 +183,7 @@ export default function NewFundraiserPage() {
                   <span className="label-text font-medium">Start Date *</span>
                 </label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   name="start_date"
                   value={formData.start_date}
                   onChange={handleChange}
@@ -189,10 +196,11 @@ export default function NewFundraiserPage() {
                   <span className="label-text font-medium">End Date</span>
                 </label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   name="end_date"
                   value={formData.end_date}
                   onChange={handleChange}
+                  min={formData.start_date}
                   className="input input-bordered w-full"
                 />
               </div>

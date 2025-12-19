@@ -10,6 +10,7 @@ export default function FundraiserDetailPage() {
     const router = useRouter();
     const [fundraiser, setFundraiser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isPublishing, setIsPublishing] = useState(false);
 
     useEffect(() => {
         fetchFundraiser();
@@ -33,6 +34,28 @@ export default function FundraiserDetailPage() {
             toast.error("Failed to load fundraiser");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handlePublish = async () => {
+        setIsPublishing(true);
+        try {
+            const res = await fetch(`/api/fundraisers/${params.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "active" }),
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to publish");
+            }
+
+            toast.success("Fundraiser published!");
+            setFundraiser((prev) => ({ ...prev, status: "active" }));
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setIsPublishing(false);
         }
     };
 
@@ -161,11 +184,17 @@ export default function FundraiserDetailPage() {
                     Edit
                 </Link>
                 {fundraiser.status === "draft" && (
-                    <button className="btn btn-primary">
-                        Publish
+                    <button
+                        className="btn btn-primary"
+                        onClick={handlePublish}
+                        disabled={isPublishing}
+                    >
+                        {isPublishing && <span className="loading loading-spinner loading-sm" />}
+                        {isPublishing ? "Publishing..." : "Publish"}
                     </button>
                 )}
             </div>
         </div>
     );
 }
+

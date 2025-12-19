@@ -1,12 +1,43 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-
-export const dynamic = "force-dynamic";
+import toast from "react-hot-toast";
 
 // Fundraisers List Page
-export default async function FundraisersPage() {
-  // TODO: Fetch fundraisers from Supabase
-  const fundraisers = [];
+export default function FundraisersPage() {
+  const [fundraisers, setFundraisers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+
+  useEffect(() => {
+    fetchFundraisers();
+  }, []);
+
+  const fetchFundraisers = async () => {
+    try {
+      const res = await fetch("/api/fundraisers");
+      const data = await res.json();
+      if (data.fundraisers) {
+        setFundraisers(data.fundraisers);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load fundraisers");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredFundraisers = fundraisers.filter((f) => {
+    if (filter === "all") return true;
+    if (filter === "events") return f.type === "event";
+    if (filter === "campaigns") return f.type === "donation_campaign";
+    if (filter === "active") return f.status === "active";
+    if (filter === "draft") return f.status === "draft";
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -28,39 +59,74 @@ export default async function FundraisersPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        <button className="btn btn-sm btn-active">All</button>
-        <button className="btn btn-sm btn-ghost">Events</button>
-        <button className="btn btn-sm btn-ghost">Campaigns</button>
-        <button className="btn btn-sm btn-ghost">Active</button>
-        <button className="btn btn-sm btn-ghost">Completed</button>
+        <button
+          className={`btn btn-sm ${filter === "all" ? "btn-active" : "btn-ghost"}`}
+          onClick={() => setFilter("all")}
+        >
+          All ({fundraisers.length})
+        </button>
+        <button
+          className={`btn btn-sm ${filter === "events" ? "btn-active" : "btn-ghost"}`}
+          onClick={() => setFilter("events")}
+        >
+          Events
+        </button>
+        <button
+          className={`btn btn-sm ${filter === "campaigns" ? "btn-active" : "btn-ghost"}`}
+          onClick={() => setFilter("campaigns")}
+        >
+          Campaigns
+        </button>
+        <button
+          className={`btn btn-sm ${filter === "active" ? "btn-active" : "btn-ghost"}`}
+          onClick={() => setFilter("active")}
+        >
+          Active
+        </button>
+        <button
+          className={`btn btn-sm ${filter === "draft" ? "btn-active" : "btn-ghost"}`}
+          onClick={() => setFilter("draft")}
+        >
+          Draft
+        </button>
       </div>
 
       {/* Fundraisers Grid */}
-      {fundraisers.length === 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <span className="loading loading-spinner loading-lg" />
+        </div>
+      ) : filteredFundraisers.length === 0 ? (
         <div className="bg-base-100 rounded-box shadow p-12 text-center">
           <div className="text-6xl mb-4">🎁</div>
-          <h2 className="text-xl font-semibold mb-2">No fundraisers yet</h2>
+          <h2 className="text-xl font-semibold mb-2">
+            {fundraisers.length === 0 ? "No fundraisers yet" : "No matches found"}
+          </h2>
           <p className="text-base-content/60 mb-6 max-w-md mx-auto">
-            Create your first event or donation campaign to start raising funds for your daycare.
+            {fundraisers.length === 0
+              ? "Create your first event or donation campaign to start raising funds for your daycare."
+              : "Try adjusting your filters."}
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href="/dashboard/fundraisers/new?type=event"
-              className="btn btn-primary"
-            >
-              🎟️ Create Event
-            </Link>
-            <Link
-              href="/dashboard/fundraisers/new?type=donation_campaign"
-              className="btn btn-secondary"
-            >
-              💝 Start Campaign
-            </Link>
-          </div>
+          {fundraisers.length === 0 && (
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/dashboard/fundraisers/new?type=event"
+                className="btn btn-primary"
+              >
+                🎟️ Create Event
+              </Link>
+              <Link
+                href="/dashboard/fundraisers/new?type=donation_campaign"
+                className="btn btn-secondary"
+              >
+                💝 Start Campaign
+              </Link>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {fundraisers.map((fundraiser) => (
+          {filteredFundraisers.map((fundraiser) => (
             <FundraiserCard key={fundraiser.id} fundraiser={fundraiser} />
           ))}
         </div>
@@ -72,7 +138,7 @@ export default async function FundraisersPage() {
 function FundraiserCard({ fundraiser }) {
   const isEvent = fundraiser.type === "event";
   const progress = fundraiser.goal_amount
-    ? (fundraiser.current_amount / fundraiser.goal_amount) * 100
+    ? ((fundraiser.amount_raised || 0) / fundraiser.goal_amount) * 100
     : 0;
 
   return (
@@ -119,10 +185,10 @@ function FundraiserCard({ fundraiser }) {
           <div className="mb-3">
             <div className="flex justify-between text-sm mb-1">
               <span className="font-medium text-primary">
-                ${fundraiser.current_amount?.toLocaleString() || 0}
+                ${(fundraiser.amount_raised || 0).toLocaleString()}
               </span>
               <span className="text-base-content/60">
-                of ${fundraiser.goal_amount?.toLocaleString()}
+                of ${fundraiser.goal_amount.toLocaleString()}
               </span>
             </div>
             <progress
@@ -137,7 +203,7 @@ function FundraiserCard({ fundraiser }) {
         {isEvent && (
           <div className="flex items-center gap-4 text-sm text-base-content/60 mb-3">
             <span>🎟️ {fundraiser.tickets_sold || 0} sold</span>
-            <span>💰 ${fundraiser.current_amount?.toLocaleString() || 0}</span>
+            <span>💰 ${((fundraiser.tickets_sold || 0) * (fundraiser.ticket_price || 0)).toLocaleString()}</span>
           </div>
         )}
 
