@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/libs/supabase";
 import { cookies } from "next/headers";
+import crypto from "crypto";
 
 export async function POST(req) {
     try {
@@ -16,7 +17,13 @@ export async function POST(req) {
         const normalizedEmail = email.toLowerCase().trim();
         const normalizedCode = code.trim();
 
-        console.log("Verify OTP - Looking for:", { normalizedEmail, normalizedCode });
+        // Hash the code - NextAuth stores hashed tokens
+        const hashedCode = crypto
+            .createHash("sha256")
+            .update(`${normalizedCode}${process.env.NEXTAUTH_SECRET}`)
+            .digest("hex");
+
+        console.log("Verify OTP - Looking for:", { normalizedEmail, normalizedCode, hashedCode });
 
         const supabase = createAdminSupabaseClient();
 
@@ -28,31 +35,31 @@ export async function POST(req) {
 
         console.log("All verification tokens in DB:", allTokens);
 
-        // Try exact match first
+        // Try with hashed token first
         let { data: tokenData, error: tokenError } = await supabase
             .schema("next_auth")
             .from("verification_tokens")
             .select("*")
             .eq("identifier", normalizedEmail)
-            .eq("token", normalizedCode)
+            .eq("token", hashedCode)
             .single();
 
-        // If not found, try case-insensitive match on identifier
+        // If not found with hash, try raw code (in case hashing is disabled)
         if (!tokenData) {
-            const { data: caseMatch } = await supabase
+            const { data: rawMatch } = await supabase
                 .schema("next_auth")
                 .from("verification_tokens")
                 .select("*")
-                .ilike("identifier", normalizedEmail)
+                .eq("identifier", normalizedEmail)
                 .eq("token", normalizedCode)
                 .single();
-            tokenData = caseMatch;
+            tokenData = rawMatch;
         }
 
         console.log("Token lookup result:", { tokenData, tokenError });
 
         if (!tokenData) {
-            console.error("Token not found. Email:", normalizedEmail, "Code:", normalizedCode);
+            console.error("Token not found. Email:", normalizedEmail, "Code:", normalizedCode, "Hashed:", hashedCode);
             return NextResponse.json(
                 { error: "Invalid or expired verification code" },
                 { status: 400 }
@@ -67,7 +74,7 @@ export async function POST(req) {
                 .from("verification_tokens")
                 .delete()
                 .eq("identifier", normalizedEmail)
-                .eq("token", normalizedCode);
+                .eq("token", tokenData.token);
 
             return NextResponse.json(
                 { error: "Verification code has expired" },
@@ -81,7 +88,7 @@ export async function POST(req) {
             .from("verification_tokens")
             .delete()
             .eq("identifier", normalizedEmail)
-            .eq("token", normalizedCode);
+            .eq("token", tokenData.token);
 
         // Get or create user
         let { data: user } = await supabase
