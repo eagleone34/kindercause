@@ -47,6 +47,7 @@ export async function GET() {
 export async function POST(req) {
   try {
     const session = await auth();
+    console.log("Contacts API - session:", JSON.stringify(session, null, 2));
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
