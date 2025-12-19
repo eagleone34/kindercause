@@ -100,6 +100,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     session: async ({ session, token, user }) => {
+      console.log("Session callback:", { session: !!session, token: !!token, user: !!user, userId: user?.id });
       if (session?.user) {
         // For JWT strategy, use token.sub
         // For database strategy, use user.id
