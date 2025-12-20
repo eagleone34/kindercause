@@ -89,10 +89,6 @@ export default function SettingsPage() {
     };
 
     const handleDeleteGroup = async (groupName) => {
-        if (!confirm(`Delete group "${groupName}"? Contacts in this group will not be deleted.`)) {
-            return;
-        }
-
         try {
             const res = await fetch(`/api/groups?name=${encodeURIComponent(groupName)}`, {
                 method: "DELETE",
