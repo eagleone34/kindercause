@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/libs/auth";
 import { createAdminSupabaseClient } from "@/libs/supabase";
 
-// Default groups - these are available to all organizations
+// Default groups - used to initialize new organizations
 const DEFAULT_GROUPS = [
     "Parents",
     "Volunteers",
@@ -31,14 +31,12 @@ export async function GET() {
             .eq("user_id", session.user.id)
             .single();
 
-        // Combine default groups with custom groups
-        const customGroups = org?.custom_groups || [];
-        const allGroups = [...DEFAULT_GROUPS, ...customGroups];
+        // If org has custom_groups set, use those. Otherwise use defaults
+        const groups = org?.custom_groups?.length > 0 ? org.custom_groups : DEFAULT_GROUPS;
 
         return NextResponse.json({
-            groups: allGroups,
+            groups: groups,
             defaultGroups: DEFAULT_GROUPS,
-            customGroups: customGroups,
         });
     } catch (error) {
         console.error("Error in GET /api/groups:", error);
@@ -46,7 +44,7 @@ export async function GET() {
     }
 }
 
-// POST /api/groups - Add a new custom group
+// POST /api/groups - Add a new group
 export async function POST(req) {
     try {
         const session = await auth();
@@ -65,15 +63,6 @@ export async function POST(req) {
         }
 
         const groupName = name.trim();
-
-        // Check if it's a default group name
-        if (DEFAULT_GROUPS.map(g => g.toLowerCase()).includes(groupName.toLowerCase())) {
-            return NextResponse.json(
-                { error: "This group already exists" },
-                { status: 400 }
-            );
-        }
-
         const supabase = createAdminSupabaseClient();
 
         // Get the user's organization
@@ -87,10 +76,11 @@ export async function POST(req) {
             return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }
 
-        const customGroups = org.custom_groups || [];
+        // Use existing custom_groups or default groups
+        const currentGroups = org.custom_groups?.length > 0 ? org.custom_groups : [...DEFAULT_GROUPS];
 
-        // Check if custom group already exists
-        if (customGroups.map(g => g.toLowerCase()).includes(groupName.toLowerCase())) {
+        // Check if group already exists
+        if (currentGroups.map(g => g.toLowerCase()).includes(groupName.toLowerCase())) {
             return NextResponse.json(
                 { error: "This group already exists" },
                 { status: 400 }
@@ -98,7 +88,7 @@ export async function POST(req) {
         }
 
         // Add the new group
-        const updatedGroups = [...customGroups, groupName];
+        const updatedGroups = [...currentGroups, groupName];
 
         const { error } = await supabase
             .from("organizations")
@@ -111,7 +101,7 @@ export async function POST(req) {
 
         return NextResponse.json({
             success: true,
-            groups: [...DEFAULT_GROUPS, ...updatedGroups],
+            groups: updatedGroups,
         });
     } catch (error) {
         console.error("Error in POST /api/groups:", error);
@@ -119,7 +109,7 @@ export async function POST(req) {
     }
 }
 
-// DELETE /api/groups - Remove a custom group
+// DELETE /api/groups - Remove any group
 export async function DELETE(req) {
     try {
         const session = await auth();
@@ -137,14 +127,6 @@ export async function DELETE(req) {
             );
         }
 
-        // Cannot delete default groups
-        if (DEFAULT_GROUPS.includes(name)) {
-            return NextResponse.json(
-                { error: "Cannot delete default groups" },
-                { status: 400 }
-            );
-        }
-
         const supabase = createAdminSupabaseClient();
 
         // Get the user's organization
@@ -158,8 +140,9 @@ export async function DELETE(req) {
             return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }
 
-        const customGroups = org.custom_groups || [];
-        const updatedGroups = customGroups.filter(g => g !== name);
+        // Use existing custom_groups or default groups
+        const currentGroups = org.custom_groups?.length > 0 ? org.custom_groups : [...DEFAULT_GROUPS];
+        const updatedGroups = currentGroups.filter(g => g !== name);
 
         const { error } = await supabase
             .from("organizations")
@@ -170,7 +153,7 @@ export async function DELETE(req) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, groups: updatedGroups });
     } catch (error) {
         console.error("Error in DELETE /api/groups:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });

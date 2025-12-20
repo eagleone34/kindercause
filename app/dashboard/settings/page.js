@@ -5,24 +5,12 @@ import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import apiClient from "@/libs/api";
 
-// Default contact groups (can't be deleted)
-const DEFAULT_GROUPS = [
-    "Parents",
-    "Volunteers",
-    "Donors",
-    "Board Members",
-    "Alumni",
-    "Staff",
-    "Sponsors",
-    "Other",
-];
-
 export default function SettingsPage() {
     const { data: session } = useSession();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [organization, setOrganization] = useState(null);
-    const [customGroups, setCustomGroups] = useState([]);
+    const [groups, setGroups] = useState([]);
     const [newGroupName, setNewGroupName] = useState("");
     const [formData, setFormData] = useState({
         name: "",
@@ -69,7 +57,7 @@ export default function SettingsPage() {
             const res = await fetch("/api/groups");
             if (res.ok) {
                 const data = await res.json();
-                setCustomGroups(data.customGroups || []);
+                setGroups(data.groups || []);
             }
         } catch (error) {
             console.error(error);
@@ -330,32 +318,21 @@ export default function SettingsPage() {
                         Organize your contacts into groups for targeted email campaigns.
                     </p>
 
-                    {/* Default Groups */}
+                    {/* All Groups */}
                     <div className="mb-6">
-                        <h3 className="font-medium mb-3">Default Groups</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {DEFAULT_GROUPS.map((group) => (
-                                <span key={group} className="badge badge-lg badge-outline">
-                                    {group}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Custom Groups */}
-                    <div className="mb-6">
-                        <h3 className="font-medium mb-3">Custom Groups</h3>
-                        {customGroups.length === 0 ? (
-                            <p className="text-base-content/50 text-sm">No custom groups yet</p>
+                        <h3 className="font-medium mb-3">Your Groups</h3>
+                        {groups.length === 0 ? (
+                            <p className="text-base-content/50 text-sm">No groups yet. Add one below!</p>
                         ) : (
                             <div className="flex flex-wrap gap-2">
-                                {customGroups.map((group) => (
+                                {groups.map((group) => (
                                     <span key={group} className="badge badge-lg gap-1">
                                         {group}
                                         <button
                                             type="button"
                                             onClick={() => handleDeleteGroup(group)}
                                             className="hover:text-error"
+                                            title="Delete group"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
