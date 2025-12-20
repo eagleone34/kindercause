@@ -35,8 +35,9 @@ export default function ContactsPage() {
   };
 
   const filteredContacts = contacts.filter((contact) => {
+    const fullName = `${contact.first_name || ""} ${contact.last_name || ""}`.toLowerCase();
     const matchesSearch =
-      contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fullName.includes(searchTerm.toLowerCase()) ||
       contact.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTag = !selectedTag || contact.tags?.includes(selectedTag);
     return matchesSearch && matchesTag;

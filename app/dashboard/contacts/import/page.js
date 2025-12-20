@@ -1,101 +1,68 @@
 "use client";
 
-import { useState, useCallback } from "react";
-// import { useRouter } from "next/navigation";
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useDropzone } from "react-dropzone";
-import Papa from "papaparse";
 import toast from "react-hot-toast";
 
 export default function ImportContactsPage() {
-  // const router = useRouter();
+  const router = useRouter();
+  const fileInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1: upload, 2: preview, 3: done
-  const [parsedData, setParsedData] = useState([]);
-  const [headers, setHeaders] = useState([]);
-  const [mapping, setMapping] = useState({
-    name: "",
-    email: "",
-    phone: "",
-  });
-  const [defaultTags, setDefaultTags] = useState("");
-  const [importResults, setImportResults] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [fileName, setFileName] = useState("");
 
-  const onDrop = useCallback((acceptedFiles) => {
-    const file = acceptedFiles[0];
+  const parseCSV = (text) => {
+    const lines = text.trim().split("\n");
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+    const rows = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
+      const row = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || "";
+      });
+      rows.push(row);
+    }
+
+    return rows;
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        if (results.data.length === 0) {
-          toast.error("No data found in CSV");
-          return;
-        }
+    setFileName(file.name);
 
-        setParsedData(results.data);
-        setHeaders(results.meta.fields || []);
-
-        // Auto-detect column mapping
-        const fields = results.meta.fields || [];
-        const autoMapping = { name: "", email: "", phone: "" };
-
-        fields.forEach((field) => {
-          const lower = field.toLowerCase();
-          if (lower.includes("name") && !autoMapping.name) {
-            autoMapping.name = field;
-          }
-          if (lower.includes("email") && !autoMapping.email) {
-            autoMapping.email = field;
-          }
-          if (lower.includes("phone") && !autoMapping.phone) {
-            autoMapping.phone = field;
-          }
-        });
-
-        setMapping(autoMapping);
-        setStep(2);
-        toast.success(`Loaded ${results.data.length} rows`);
-      },
-      error: (error) => {
-        toast.error("Failed to parse CSV: " + error.message);
-      },
-    });
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      "text/csv": [".csv"],
-      "application/vnd.ms-excel": [".csv"],
-    },
-    maxFiles: 1,
-  });
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result;
+      if (typeof text === "string") {
+        const parsed = parseCSV(text);
+        setPreview(parsed.slice(0, 5)); // Preview first 5 rows
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const handleImport = async () => {
-    if (!mapping.email) {
-      toast.error("Email column is required");
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) {
+      toast.error("Please select a file");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Transform data based on mapping
-      const contacts = parsedData
-        .map((row) => ({
-          name: row[mapping.name] || row[mapping.email]?.split("@")[0] || "Unknown",
-          email: row[mapping.email]?.trim().toLowerCase(),
-          phone: row[mapping.phone]?.trim() || null,
-          tags: defaultTags
-            ? defaultTags.split(",").map((t) => t.trim()).filter(Boolean)
-            : [],
-        }))
-        .filter((c) => c.email && isValidEmail(c.email));
+      const text = await file.text();
+      const contacts = parseCSV(text);
 
       if (contacts.length === 0) {
-        toast.error("No valid contacts found");
+        toast.error("No valid contacts found in file");
         return;
       }
 
@@ -108,12 +75,11 @@ export default function ImportContactsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Import failed");
+        throw new Error(data.error || "Failed to import contacts");
       }
 
-      setImportResults(data);
-      setStep(3);
       toast.success(`Imported ${data.imported} contacts!`);
+      router.push("/dashboard/contacts");
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -121,21 +87,14 @@ export default function ImportContactsPage() {
     }
   };
 
-  const isValidEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  const previewContacts = parsedData.slice(0, 5).map((row) => ({
-    name: row[mapping.name] || row[mapping.email]?.split("@")[0] || "—",
-    email: row[mapping.email] || "—",
-    phone: row[mapping.phone] || "—",
-  }));
-
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <Link href="/dashboard/contacts" className="btn btn-ghost btn-sm mb-4">
+        <Link
+          href="/dashboard/contacts"
+          className="btn btn-ghost btn-sm mb-4"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
           </svg>
@@ -143,240 +102,90 @@ export default function ImportContactsPage() {
         </Link>
         <h1 className="text-2xl font-bold">Import Contacts</h1>
         <p className="text-base-content/70">
-          Upload a CSV file to import your parent email list
+          Upload a CSV or Excel file to import multiple contacts at once
         </p>
       </div>
 
-      {/* Progress Steps */}
-      <ul className="steps steps-horizontal w-full mb-8">
-        <li className={`step ${step >= 1 ? "step-primary" : ""}`}>Upload</li>
-        <li className={`step ${step >= 2 ? "step-primary" : ""}`}>Map Columns</li>
-        <li className={`step ${step >= 3 ? "step-primary" : ""}`}>Done</li>
-      </ul>
+      <div className="space-y-6">
+        {/* File Upload */}
+        <div className="bg-base-100 rounded-box shadow p-6">
+          <h2 className="font-semibold mb-4">Upload File</h2>
 
-      {/* Step 1: Upload */}
-      {step === 1 && (
-        <div className="bg-base-100 rounded-box shadow p-8">
           <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${isDragActive
-              ? "border-primary bg-primary/5"
-              : "border-base-300 hover:border-primary/50"
-              }`}
+            className="border-2 border-dashed border-base-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+            onClick={() => fileInputRef.current?.click()}
           >
-            <input {...getInputProps()} />
-            <div className="text-5xl mb-4">📄</div>
-            <p className="font-medium mb-2">
-              {isDragActive
-                ? "Drop your CSV file here"
-                : "Drag & drop your CSV file here"}
-            </p>
-            <p className="text-sm text-base-content/60 mb-4">
-              or click to browse
-            </p>
-            <button className="btn btn-primary btn-sm">Select File</button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div className="text-4xl mb-2">📄</div>
+            {fileName ? (
+              <p className="font-medium">{fileName}</p>
+            ) : (
+              <>
+                <p className="font-medium">Click to upload or drag and drop</p>
+                <p className="text-sm text-base-content/60">CSV or Excel file</p>
+              </>
+            )}
           </div>
 
-          <div className="mt-6 p-4 bg-base-200 rounded-lg">
-            <h3 className="font-medium text-sm mb-2">CSV Format Tips:</h3>
-            <ul className="text-sm text-base-content/70 space-y-1">
-              <li>• First row should be column headers</li>
-              <li>• Include columns: Name, Email, Phone (optional)</li>
-              <li>• Works with exports from Google Sheets, Excel, etc.</li>
+          <div className="mt-4 text-sm text-base-content/60">
+            <p className="font-medium mb-2">Expected columns:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li><code>Name</code> or <code>First Name</code> + <code>Last Name</code></li>
+              <li><code>Email</code> (required)</li>
+              <li><code>Phone</code> (optional)</li>
+              <li><code>Tags</code> (optional, comma-separated)</li>
             </ul>
           </div>
         </div>
-      )}
 
-      {/* Step 2: Map Columns */}
-      {step === 2 && (
-        <div className="space-y-6">
+        {/* Preview */}
+        {preview && preview.length > 0 && (
           <div className="bg-base-100 rounded-box shadow p-6">
-            <h2 className="font-semibold mb-4">Map Columns</h2>
-            <p className="text-sm text-base-content/70 mb-4">
-              Match your CSV columns to contact fields
-            </p>
-
-            <div className="grid sm:grid-cols-3 gap-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Name</span>
-                </label>
-                <select
-                  className="select select-bordered w-full"
-                  value={mapping.name}
-                  onChange={(e) =>
-                    setMapping({ ...mapping, name: e.target.value })
-                  }
-                >
-                  <option value="">— Select column —</option>
-                  {headers.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">
-                    Email <span className="text-error">*</span>
-                  </span>
-                </label>
-                <select
-                  className="select select-bordered w-full"
-                  value={mapping.email}
-                  onChange={(e) =>
-                    setMapping({ ...mapping, email: e.target.value })
-                  }
-                >
-                  <option value="">— Select column —</option>
-                  {headers.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Phone</span>
-                </label>
-                <select
-                  className="select select-bordered w-full"
-                  value={mapping.phone}
-                  onChange={(e) =>
-                    setMapping({ ...mapping, phone: e.target.value })
-                  }
-                >
-                  <option value="">— Select column —</option>
-                  {headers.map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="form-control mt-4">
-              <label className="label">
-                <span className="label-text font-medium">Default Tags</span>
-                <span className="label-text-alt">Optional</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Current Parents, 2024 Import"
-                value={defaultTags}
-                onChange={(e) => setDefaultTags(e.target.value)}
-                className="input input-bordered w-full"
-              />
-              <label className="label">
-                <span className="label-text-alt">
-                  Separate multiple tags with commas
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {/* Preview */}
-          <div className="bg-base-100 rounded-box shadow p-6">
-            <h2 className="font-semibold mb-4">Preview</h2>
-            <p className="text-sm text-base-content/70 mb-4">
-              Showing first 5 of {parsedData.length} contacts
-            </p>
-
+            <h2 className="font-semibold mb-4">Preview (first {preview.length} rows)</h2>
             <div className="overflow-x-auto">
               <table className="table table-sm">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
+                    {Object.keys(preview[0]).map((key) => (
+                      <th key={key}>{key}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {previewContacts.map((contact, i) => (
+                  {preview.map((row, i) => (
                     <tr key={i}>
-                      <td>{contact.name}</td>
-                      <td>{contact.email}</td>
-                      <td>{contact.phone}</td>
+                      {Object.values(row).map((val, j) => (
+                        <td key={j}>{val}</td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
+        )}
 
-          {/* Actions */}
-          <div className="flex gap-4">
-            <button
-              className="btn btn-ghost"
-              onClick={() => {
-                setStep(1);
-                setParsedData([]);
-                setHeaders([]);
-              }}
-            >
-              Back
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleImport}
-              disabled={isLoading || !mapping.email}
-            >
-              {isLoading && <span className="loading loading-spinner loading-sm" />}
-              Import {parsedData.length} Contacts
-            </button>
-          </div>
+        {/* Actions */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleImport}
+            className="btn btn-primary"
+            disabled={isLoading || !fileName}
+          >
+            {isLoading && <span className="loading loading-spinner loading-sm" />}
+            {isLoading ? "Importing..." : "Import Contacts"}
+          </button>
+          <Link href="/dashboard/contacts" className="btn btn-ghost">
+            Cancel
+          </Link>
         </div>
-      )}
-
-      {/* Step 3: Done */}
-      {step === 3 && importResults && (
-        <div className="bg-base-100 rounded-box shadow p-8 text-center">
-          <div className="w-20 h-20 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-10 h-10 text-success">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-          </div>
-
-          <h2 className="text-2xl font-bold mb-2">Import Complete!</h2>
-
-          <div className="stats shadow my-6">
-            <div className="stat">
-              <div className="stat-title">Imported</div>
-              <div className="stat-value text-success">{importResults.imported}</div>
-            </div>
-            {importResults.skipped > 0 && (
-              <div className="stat">
-                <div className="stat-title">Skipped</div>
-                <div className="stat-value text-warning">{importResults.skipped}</div>
-                <div className="stat-desc">Duplicates or invalid</div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex justify-center gap-4">
-            <Link href="/dashboard/contacts" className="btn btn-primary">
-              View Contacts
-            </Link>
-            <button
-              className="btn btn-ghost"
-              onClick={() => {
-                setStep(1);
-                setParsedData([]);
-                setHeaders([]);
-                setImportResults(null);
-              }}
-            >
-              Import More
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

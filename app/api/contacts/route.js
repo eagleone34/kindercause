@@ -47,7 +47,6 @@ export async function GET() {
 export async function POST(req) {
   try {
     const session = await auth();
-    console.log("Contacts API - session:", JSON.stringify(session, null, 2));
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -61,6 +60,11 @@ export async function POST(req) {
         { status: 400 }
       );
     }
+
+    // Split name into first_name and last_name
+    const nameParts = name.trim().split(" ");
+    const first_name = nameParts[0];
+    const last_name = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
 
     const supabase = createAdminSupabaseClient();
 
@@ -93,7 +97,8 @@ export async function POST(req) {
       .from("contacts")
       .insert({
         organization_id: org.id,
-        name,
+        first_name,
+        last_name,
         email: email.toLowerCase().trim(),
         phone: phone || null,
         tags: tags || [],
