@@ -1,37 +1,51 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { EMAIL_TEMPLATES, TEMPLATE_CATEGORIES, SMART_VARIABLES } from "@/libs/emailTemplates";
 
 export default function NewEmailCampaignPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const searchRef = useRef(null);
+
+  // State
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [contacts, setContacts] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [organization, setOrganization] = useState(null);
+  const [fundraiser, setFundraiser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(true); // Show template picker initially
   const [formData, setFormData] = useState({
     subject: "",
     body: "",
     selectedGroups: [],
-    selectedContacts: [], // Individual contacts
+    selectedContacts: [],
   });
   const [recipientCount, setRecipientCount] = useState(0);
 
+  // Load data on mount
   useEffect(() => {
     fetchContacts();
     fetchGroups();
+    fetchOrganization();
+
+    // Check for fundraiser query param
+    const fundraiserId = searchParams.get("fundraiser");
+    if (fundraiserId) {
+      fetchFundraiser(fundraiserId);
+    }
   }, []);
 
+  // Calculate recipient count
   useEffect(() => {
-    // Calculate recipient count
     let recipients = new Set();
 
-    // Add contacts from selected groups
     if (formData.selectedGroups.length > 0) {
       contacts.forEach((c) => {
         if (formData.selectedGroups.some((g) => c.tags?.includes(g))) {
@@ -40,10 +54,8 @@ export default function NewEmailCampaignPage() {
       });
     }
 
-    // Add individually selected contacts
     formData.selectedContacts.forEach((c) => recipients.add(c.id));
 
-    // If nothing selected, all contacts
     if (formData.selectedGroups.length === 0 && formData.selectedContacts.length === 0) {
       setRecipientCount(contacts.length);
     } else {
@@ -55,12 +67,8 @@ export default function NewEmailCampaignPage() {
     try {
       const res = await fetch("/api/contacts");
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch contacts");
-      }
-      if (data.contacts) {
-        setContacts(data.contacts);
-      }
+      if (!res.ok) throw new Error(data.error || "Failed to fetch contacts");
+      if (data.contacts) setContacts(data.contacts);
     } catch (error) {
       console.error("Error fetching contacts:", error);
       toast.error(error.message || "Failed to load contacts");
@@ -71,12 +79,78 @@ export default function NewEmailCampaignPage() {
     try {
       const res = await fetch("/api/groups");
       const data = await res.json();
-      if (data.groups) {
-        setGroups(data.groups);
+      if (data.groups) setGroups(data.groups);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchOrganization = async () => {
+    try {
+      const res = await fetch("/api/organization");
+      const data = await res.json();
+      if (res.ok) setOrganization(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchFundraiser = async (id) => {
+    try {
+      const res = await fetch(`/api/fundraisers/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFundraiser(data);
+        // Pre-select appropriate template based on type
+        const type = searchParams.get("type");
+        if (type === "attendees" || type === "donors") {
+          // User wants to email event attendees/donors
+          // Template will be pre-filled when they select one
+        }
       }
     } catch (error) {
       console.error(error);
     }
+  };
+
+  // Replace smart variables in text
+  const replaceVariables = (text) => {
+    if (!text) return text;
+
+    let result = text;
+
+    // Organization variables
+    if (organization) {
+      result = result.replace(/\{\{organization_name\}\}/g, organization.name || "");
+    }
+
+    // Fundraiser/Event variables
+    if (fundraiser) {
+      result = result.replace(/\{\{event_name\}\}/g, fundraiser.name || "");
+      result = result.replace(/\{\{event_date\}\}/g,
+        fundraiser.start_date ? new Date(fundraiser.start_date).toLocaleDateString('en-US', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        }) : ""
+      );
+      result = result.replace(/\{\{event_location\}\}/g, fundraiser.location || "TBD");
+      result = result.replace(/\{\{ticket_price\}\}/g, fundraiser.ticket_price || "");
+
+      const publicUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/${fundraiser.organization?.slug}/${fundraiser.slug}`;
+      result = result.replace(/\{\{purchase_link\}\}/g, publicUrl);
+      result = result.replace(/\{\{donate_link\}\}/g, publicUrl);
+    }
+
+    return result;
+  };
+
+  const selectTemplate = (template) => {
+    setFormData((prev) => ({
+      ...prev,
+      subject: replaceVariables(template.subject),
+      body: replaceVariables(template.body),
+    }));
+    setShowTemplates(false);
+    toast.success(`Template "${template.name}" applied!`);
   };
 
   const handleChange = (e) => {
@@ -208,11 +282,54 @@ export default function NewEmailCampaignPage() {
         </Link>
         <h1 className="text-2xl font-bold">New Email Campaign</h1>
         <p className="text-base-content/70">
-          Compose and send an email to your contacts
+          {fundraiser
+            ? `Compose email for ${fundraiser.name}`
+            : "Compose and send an email to your contacts"
+          }
         </p>
       </div>
 
       <div className="space-y-6">
+        {/* Template Picker */}
+        {showTemplates && (
+          <div className="bg-base-100 rounded-box shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-lg">✨ Start with a Template</h2>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowTemplates(false)}
+              >
+                Start from Scratch
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {TEMPLATE_CATEGORIES.map((category) => (
+                <div key={category.id}>
+                  <h3 className="text-sm font-medium text-base-content/70 mb-3">
+                    {category.emoji} {category.name}
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {EMAIL_TEMPLATES.filter(t => t.category === category.id).map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => selectTemplate(template)}
+                        className="flex flex-col items-start p-4 border border-base-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                      >
+                        <span className="text-2xl mb-2">{template.emoji}</span>
+                        <span className="font-medium text-sm">{template.name}</span>
+                        <span className="text-xs text-base-content/60 mt-1">
+                          {template.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Recipients */}
         <div className="bg-base-100 rounded-box shadow p-6">
           <h2 className="font-semibold mb-4">Recipients</h2>
@@ -227,6 +344,18 @@ export default function NewEmailCampaignPage() {
                 : `${formData.selectedGroups.length} group(s), ${formData.selectedContacts.length} individual(s)`}
             </span>
           </div>
+
+          {/* Event-specific audience */}
+          {fundraiser && (
+            <div className="mb-4 p-3 bg-primary/10 rounded-lg">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-lg">{fundraiser.type === "event" ? "🎟️" : "💝"}</span>
+                <span>
+                  Linked to: <strong>{fundraiser.name}</strong>
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Search for contacts */}
           <div className="form-control mb-4">
@@ -273,10 +402,7 @@ export default function NewEmailCampaignPage() {
               </label>
               <div className="flex flex-wrap gap-2">
                 {formData.selectedContacts.map((c) => (
-                  <div
-                    key={c.id}
-                    className="badge badge-lg gap-1"
-                  >
+                  <div key={c.id} className="badge badge-lg gap-1">
                     {c.first_name} {c.last_name}
                     <button onClick={() => removeContact(c.id)}>
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
@@ -335,7 +461,17 @@ export default function NewEmailCampaignPage() {
 
         {/* Email Content */}
         <div className="bg-base-100 rounded-box shadow p-6">
-          <h2 className="font-semibold mb-4">Email Content</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold">Email Content</h2>
+            {!showTemplates && (
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowTemplates(true)}
+              >
+                📄 Use Template
+              </button>
+            )}
+          </div>
 
           <div className="space-y-4">
             <div className="form-control">
@@ -366,20 +502,39 @@ export default function NewEmailCampaignPage() {
                 name="body"
                 value={formData.body}
                 onChange={handleChange}
-                placeholder="Write your message here...
-
-Tips:
-- Start with a friendly greeting
-- Get to the point quickly
-- Include a clear call-to-action
-- Add a link to your fundraiser"
+                placeholder="Write your message here..."
                 className="textarea textarea-bordered w-full h-64 font-mono text-sm"
               />
               <label className="label">
                 <span className="label-text-alt">
-                  Plain text only. Links will be clickable.
+                  Plain text only. Links will be clickable. Use {"{{first_name}}"} for personalization.
                 </span>
               </label>
+            </div>
+
+            {/* Variable Helper */}
+            <div className="collapse collapse-arrow bg-base-200 rounded-lg">
+              <input type="checkbox" />
+              <div className="collapse-title text-sm font-medium">
+                📝 Available Variables (click to copy)
+              </div>
+              <div className="collapse-content">
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {SMART_VARIABLES.map((v) => (
+                    <button
+                      key={v.variable}
+                      className="badge badge-outline cursor-pointer hover:badge-primary"
+                      onClick={() => {
+                        navigator.clipboard.writeText(v.variable);
+                        toast.success(`Copied ${v.variable}`);
+                      }}
+                      title={v.description}
+                    >
+                      {v.variable}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -391,9 +546,7 @@ Tips:
             <div className="border border-base-300 rounded-lg p-4 bg-white">
               <div className="border-b border-base-200 pb-3 mb-3">
                 <p className="text-sm text-base-content/60">Subject:</p>
-                <p className="font-medium">
-                  {formData.subject || "(No subject)"}
-                </p>
+                <p className="font-medium">{formData.subject || "(No subject)"}</p>
               </div>
               <div className="whitespace-pre-wrap text-sm">
                 {formData.body || "(No message)"}

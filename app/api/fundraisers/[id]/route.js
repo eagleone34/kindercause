@@ -13,10 +13,10 @@ export async function GET(req, { params }) {
         const { id } = await params;
         const supabase = createAdminSupabaseClient();
 
-        // Get the user's organization
+        // Get the user's organization (including slug for public URLs)
         const { data: org } = await supabase
             .from("organizations")
-            .select("id")
+            .select("id, slug, name")
             .eq("user_id", session.user.id)
             .single();
 
@@ -36,7 +36,14 @@ export async function GET(req, { params }) {
             return NextResponse.json({ error: "Fundraiser not found" }, { status: 404 });
         }
 
-        return NextResponse.json(fundraiser);
+        // Return fundraiser with org info for building public URLs
+        return NextResponse.json({
+            ...fundraiser,
+            organization: {
+                slug: org.slug,
+                name: org.name,
+            },
+        });
     } catch (error) {
         console.error("Error in GET /api/fundraisers/[id]:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });

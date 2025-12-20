@@ -205,8 +205,8 @@ export default function FundraiserDetailPage() {
                     </p>
                 </div>
                 <span className={`badge ${fundraiser.status === "active" ? "badge-success" :
-                        fundraiser.status === "cancelled" ? "badge-error" :
-                            "badge-ghost"
+                    fundraiser.status === "cancelled" ? "badge-error" :
+                        "badge-ghost"
                     }`}>
                     {fundraiser.status}
                 </span>
@@ -254,6 +254,91 @@ export default function FundraiserDetailPage() {
                     </>
                 )}
             </div>
+
+            {/* Quick Actions */}
+            {fundraiser.status === "active" && (
+                <div className="bg-base-100 rounded-box shadow p-6">
+                    <h2 className="font-semibold text-lg mb-4">🚀 Quick Actions</h2>
+                    <div className="flex flex-wrap gap-3">
+                        {/* Copy Purchase Link */}
+                        <button
+                            className="btn btn-outline gap-2"
+                            onClick={() => {
+                                const publicUrl = `${window.location.origin}/${fundraiser.organization?.slug}/${fundraiser.slug}`;
+                                navigator.clipboard.writeText(publicUrl);
+                                toast.success("Purchase link copied!");
+                            }}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                            </svg>
+                            Copy Purchase Link
+                        </button>
+
+                        {/* Email Attendees/Donors */}
+                        <Link
+                            href={`/dashboard/emails/new?fundraiser=${params.id}&type=${isEvent ? 'attendees' : 'donors'}`}
+                            className="btn btn-outline gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                            </svg>
+                            Email {isEvent ? "Attendees" : "Donors"} ({txTotal})
+                        </Link>
+
+                        {/* Share Event */}
+                        <div className="dropdown dropdown-end">
+                            <label tabIndex={0} className="btn btn-outline gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                                </svg>
+                                Share
+                            </label>
+                            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                                <li>
+                                    <button onClick={() => {
+                                        const publicUrl = `${window.location.origin}/${fundraiser.organization?.slug}/${fundraiser.slug}`;
+                                        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicUrl)}`, '_blank');
+                                    }}>
+                                        📘 Share on Facebook
+                                    </button>
+                                </li>
+                                <li>
+                                    <button onClick={() => {
+                                        const publicUrl = `${window.location.origin}/${fundraiser.organization?.slug}/${fundraiser.slug}`;
+                                        const text = `Check out ${fundraiser.name}!`;
+                                        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(publicUrl)}&text=${encodeURIComponent(text)}`, '_blank');
+                                    }}>
+                                        🐦 Share on X
+                                    </button>
+                                </li>
+                                <li>
+                                    <button onClick={() => {
+                                        const publicUrl = `${window.location.origin}/${fundraiser.organization?.slug}/${fundraiser.slug}`;
+                                        const text = `Check out ${fundraiser.name}! ${publicUrl}`;
+                                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                                    }}>
+                                        💬 Share on WhatsApp
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* View Public Page */}
+                        <a
+                            href={`/${fundraiser.organization?.slug}/${fundraiser.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-ghost gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                            View Public Page
+                        </a>
+                    </div>
+                </div>
+            )}
 
             {/* Details */}
             <div className="bg-base-100 rounded-box shadow p-6 space-y-4">
@@ -340,8 +425,8 @@ export default function FundraiserDetailPage() {
                                         <td className="font-medium">${tx.amount}</td>
                                         <td>
                                             <span className={`badge badge-sm ${tx.status === "completed" ? "badge-success" :
-                                                    tx.status === "refunded" ? "badge-warning" :
-                                                        "badge-ghost"
+                                                tx.status === "refunded" ? "badge-warning" :
+                                                    "badge-ghost"
                                                 }`}>
                                                 {tx.status}
                                             </span>
