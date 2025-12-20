@@ -249,17 +249,15 @@ export default function SettingsPage() {
 
                         <div className="form-control">
                             <label className="label">
-                                <span className="label-text font-medium">Public URL Slug</span>
+                                <span className="label-text font-medium">Public URL</span>
                             </label>
-                            <div className="join">
-                                <span className="btn btn-disabled join-item lowercase font-normal">kindercause.com/</span>
-                                <input
-                                    type="text"
-                                    value={organization?.slug || ""}
-                                    className="input input-bordered join-item w-full bg-base-200"
-                                    disabled
-                                />
+                            <div className="flex items-center gap-2">
+                                <span className="text-base-content/60">kindercause.com/</span>
+                                <span className="font-medium text-primary">{organization?.slug || ""}</span>
                             </div>
+                            <label className="label">
+                                <span className="label-text-alt">This is your organization's public page URL</span>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -323,29 +321,6 @@ export default function SettingsPage() {
                                     className="input input-bordered w-full"
                                 />
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* User Profile */}
-                <div className="bg-base-100 p-8 rounded-xl shadow-sm border border-base-200">
-                    <h2 className="text-xl font-bold mb-6">Your Profile</h2>
-
-                    <div className="flex items-center gap-4 mb-6">
-                        {session?.user?.image ? (
-                            <img
-                                src={session.user.image}
-                                alt={session.user.name}
-                                className="w-16 h-16 rounded-full border border-base-300"
-                            />
-                        ) : (
-                            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
-                                {session?.user?.name?.[0] || "U"}
-                            </div>
-                        )}
-                        <div>
-                            <p className="font-medium text-lg">{session?.user?.name}</p>
-                            <p className="text-base-content/60">{session?.user?.email}</p>
                         </div>
                     </div>
                 </div>

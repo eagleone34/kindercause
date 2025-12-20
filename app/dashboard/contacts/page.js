@@ -251,16 +251,17 @@ export default function ContactsPage() {
             onClick={() => {
               // Export to CSV
               const csv = [
-                ["Name", "Email", "Phone", "Tags", "Total Donated"],
+                ["First Name", "Last Name", "Email", "Phone", "Group", "Total Donated"],
                 ...contacts.map((c) => [
-                  c.name,
+                  c.first_name || "",
+                  c.last_name || "",
                   c.email,
                   c.phone || "",
-                  c.tags?.join("; ") || "",
+                  c.tags?.[0] || "",
                   c.total_donated || 0,
                 ]),
               ]
-                .map((row) => row.join(","))
+                .map((row) => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
                 .join("\n");
 
               const blob = new Blob([csv], { type: "text/csv" });
