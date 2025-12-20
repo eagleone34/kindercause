@@ -39,7 +39,7 @@ const ButtonAccount = () => {
 	if (status === "unauthenticated") return null;
 
 	return (
-		<Popover className="relative z-10">
+		<Popover className="relative z-50">
 			{({ open }) => (
 				<>
 					<Popover.Button className="btn">
@@ -68,9 +68,8 @@ const ButtonAccount = () => {
 								xmlns="http://www.w3.org/2000/svg"
 								viewBox="0 0 20 20"
 								fill="currentColor"
-								className={`w-5 h-5 duration-200 opacity-50 ${
-									open ? "transform rotate-180 " : ""
-								}`}
+								className={`w-5 h-5 duration-200 opacity-50 ${open ? "transform rotate-180 " : ""
+									}`}
 							>
 								<path
 									fillRule="evenodd"

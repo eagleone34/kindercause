@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/libs/auth";
+import { createAdminSupabaseClient } from "@/libs/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -9,15 +10,58 @@ export default async function Dashboard() {
   const session = await auth();
   const userName = session?.user?.name?.split(" ")[0] || "there";
 
-  // TODO: Fetch real data from Supabase
-  const stats = {
+  // Fetch real data from Supabase
+  const supabase = createAdminSupabaseClient();
+
+  // Get user's organization
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("user_id", session?.user?.id)
+    .single();
+
+  let stats = {
     totalRaised: 0,
     activeFundraisers: 0,
     totalContacts: 0,
     pendingPayouts: 0,
   };
 
-  const recentFundraisers = []; // TODO: Fetch from Supabase
+  let recentFundraisers = [];
+
+  if (org) {
+    // Get fundraiser stats
+    const { data: fundraisers } = await supabase
+      .from("fundraisers")
+      .select("id, name, type, status, current_amount, tickets_sold, ticket_price, created_at")
+      .eq("organization_id", org.id)
+      .order("created_at", { ascending: false });
+
+    if (fundraisers) {
+      stats.activeFundraisers = fundraisers.filter(f => f.status === "active").length;
+      stats.totalRaised = fundraisers.reduce((sum, f) => sum + (parseFloat(f.current_amount) || 0), 0);
+      recentFundraisers = fundraisers.slice(0, 5);
+    }
+
+    // Get contact count
+    const { count: contactCount } = await supabase
+      .from("contacts")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", org.id);
+
+    stats.totalContacts = contactCount || 0;
+
+    // Get pending payouts (completed purchases not yet paid out)
+    const { data: pendingPurchases } = await supabase
+      .from("purchases")
+      .select("net_amount, fundraiser_id")
+      .eq("status", "completed")
+      .in("fundraiser_id", fundraisers?.map(f => f.id) || []);
+
+    if (pendingPurchases) {
+      stats.pendingPayouts = pendingPurchases.reduce((sum, p) => sum + (parseFloat(p.net_amount) || 0), 0);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -173,7 +217,7 @@ export default async function Dashboard() {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-primary">
-                      ${fundraiser.current_amount?.toLocaleString() || 0}
+                      ${(parseFloat(fundraiser.current_amount) || 0).toLocaleString()}
                     </p>
                     <p className="text-xs text-base-content/60">raised</p>
                   </div>
