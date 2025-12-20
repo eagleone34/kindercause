@@ -17,7 +17,8 @@ export default function NewEmailCampaignPage() {
   const [contacts, setContacts] = useState([]);
   const [groups, setGroups] = useState([]);
   const [organization, setOrganization] = useState(null);
-  const [fundraiser, setFundraiser] = useState(null);
+  const [fundraisers, setFundraisers] = useState([]); // All fundraisers for dropdown
+  const [fundraiser, setFundraiser] = useState(null); // Selected fundraiser
   const [searchTerm, setSearchTerm] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showTemplates, setShowTemplates] = useState(true); // Show template picker initially
@@ -34,6 +35,7 @@ export default function NewEmailCampaignPage() {
     fetchContacts();
     fetchGroups();
     fetchOrganization();
+    fetchFundraisers();
 
     // Check for fundraiser query param
     const fundraiserId = searchParams.get("fundraiser");
@@ -95,22 +97,37 @@ export default function NewEmailCampaignPage() {
     }
   };
 
+  const fetchFundraisers = async () => {
+    try {
+      const res = await fetch("/api/fundraisers");
+      const data = await res.json();
+      if (res.ok && data.fundraisers) {
+        // Filter to only active fundraisers
+        setFundraisers(data.fundraisers.filter(f => f.status === "active"));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const fetchFundraiser = async (id) => {
     try {
       const res = await fetch(`/api/fundraisers/${id}`);
       if (res.ok) {
         const data = await res.json();
         setFundraiser(data);
-        // Pre-select appropriate template based on type
-        const type = searchParams.get("type");
-        if (type === "attendees" || type === "donors") {
-          // User wants to email event attendees/donors
-          // Template will be pre-filled when they select one
-        }
       }
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const handleSelectFundraiser = (id) => {
+    if (!id) {
+      setFundraiser(null);
+      return;
+    }
+    fetchFundraiser(id);
   };
 
   // Replace smart variables in text
@@ -345,14 +362,57 @@ export default function NewEmailCampaignPage() {
             </span>
           </div>
 
-          {/* Event-specific audience */}
-          {fundraiser && (
-            <div className="mb-4 p-3 bg-primary/10 rounded-lg">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-lg">{fundraiser.type === "event" ? "🎟️" : "💝"}</span>
-                <span>
-                  Linked to: <strong>{fundraiser.name}</strong>
+          {/* Event/Campaign Selector */}
+          <div className="form-control mb-4">
+            <label className="label">
+              <span className="label-text font-medium">🎟️ Link to Event/Campaign</span>
+              <span className="label-text-alt">For event variables in templates</span>
+            </label>
+            <select
+              className="select select-bordered w-full"
+              value={fundraiser?.id || ""}
+              onChange={(e) => handleSelectFundraiser(e.target.value)}
+            >
+              <option value="">No event selected (use generic templates)</option>
+              {fundraisers.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.type === "event" ? "🎟️" : "💝"} {f.name}
+                  {f.start_date && ` • ${new Date(f.start_date).toLocaleDateString()}`}
+                </option>
+              ))}
+            </select>
+            {fundraiser && (
+              <label className="label">
+                <span className="label-text-alt text-success">
+                  ✓ Variables like {"{{event_name}}"}, {"{{event_date}}"}, {"{{ticket_price}}"} will be auto-filled
                 </span>
+              </label>
+            )}
+          </div>
+
+          {/* Selected Event Info */}
+          {fundraiser && (
+            <div className="mb-4 p-4 bg-success/10 border border-success/20 rounded-lg">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">{fundraiser.type === "event" ? "🎟️" : "💝"}</span>
+                <div className="flex-1">
+                  <div className="font-medium">{fundraiser.name}</div>
+                  <div className="text-sm text-base-content/70 space-y-1 mt-1">
+                    {fundraiser.start_date && (
+                      <div>📅 {new Date(fundraiser.start_date).toLocaleDateString('en-US', {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                      })}</div>
+                    )}
+                    {fundraiser.location && <div>📍 {fundraiser.location}</div>}
+                    {fundraiser.ticket_price && <div>🎟️ ${fundraiser.ticket_price}</div>}
+                  </div>
+                </div>
+                <button
+                  className="btn btn-ghost btn-xs"
+                  onClick={() => setFundraiser(null)}
+                >
+                  ✕
+                </button>
               </div>
             </div>
           )}
