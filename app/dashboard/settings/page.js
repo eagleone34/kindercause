@@ -14,7 +14,6 @@ export default function SettingsPage() {
     const [newGroupName, setNewGroupName] = useState("");
     const [formData, setFormData] = useState({
         name: "",
-        email: "",
         phone: "",
         website: "",
         address: "",
@@ -36,7 +35,6 @@ export default function SettingsPage() {
                 setOrganization(data);
                 setFormData({
                     name: data.name || "",
-                    email: data.email || session?.user?.email || "",
                     phone: data.phone || "",
                     website: data.website || "",
                     address: data.address || "",
@@ -119,6 +117,13 @@ export default function SettingsPage() {
 
     const handleSave = async (e) => {
         e.preventDefault();
+
+        // Validate required fields
+        if (!formData.name?.trim()) {
+            toast.error("Organization name is required");
+            return;
+        }
+
         setIsSaving(true);
 
         try {
@@ -174,7 +179,7 @@ export default function SettingsPage() {
                     <div className="grid gap-6 max-w-xl">
                         <div className="form-control">
                             <label className="label">
-                                <span className="label-text font-medium">Organization Name *</span>
+                                <span className="label-text font-medium">Organization Name</span>
                             </label>
                             <input
                                 type="text"
@@ -183,27 +188,9 @@ export default function SettingsPage() {
                                 onChange={handleChange}
                                 placeholder="My Daycare Center"
                                 className="input input-bordered w-full"
-                                required
                             />
                         </div>
 
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text font-medium">Contact Email *</span>
-                            </label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder="contact@example.com"
-                                className="input input-bordered w-full"
-                                required
-                            />
-                            <label className="label">
-                                <span className="label-text-alt">This email receives notifications and appears on receipts</span>
-                            </label>
-                        </div>
 
                         <div className="form-control">
                             <label className="label">
