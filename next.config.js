@@ -2,7 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   // Performance optimizations
-  swcMinify: true,
   compress: true,
   poweredByHeader: false,
 
@@ -34,11 +33,6 @@ const nextConfig = {
     // Expose these so config.js can read them on the client side without NEXT_PUBLIC prefix
     STRIPE_STARTER_PRICE_ID: process.env.STRIPE_STARTER_PRICE_ID,
     STRIPE_GROWTH_PRICE_ID: process.env.STRIPE_GROWTH_PRICE_ID,
-  },
-
-  // Experimental performance features
-  experimental: {
-    optimizeCss: true,
   },
 
   webpack: (config, { webpack, isServer }) => {
