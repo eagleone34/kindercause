@@ -211,7 +211,7 @@ export default function SettingsPage() {
                                 <span className="label-text font-medium">Website</span>
                             </label>
                             <input
-                                type="url"
+                                type="text"
                                 name="website"
                                 value={formData.website}
                                 onChange={handleChange}

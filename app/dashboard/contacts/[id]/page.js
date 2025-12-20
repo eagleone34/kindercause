@@ -5,24 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
-// Predefined contact groups for categorization
-const CONTACT_GROUPS = [
-    { value: "", label: "Select a group..." },
-    { value: "Parents", label: "Parents" },
-    { value: "Volunteers", label: "Volunteers" },
-    { value: "Donors", label: "Donors" },
-    { value: "Board Members", label: "Board Members" },
-    { value: "Alumni", label: "Alumni" },
-    { value: "Staff", label: "Staff" },
-    { value: "Sponsors", label: "Sponsors" },
-    { value: "Other", label: "Other" },
-];
-
 export default function EditContactPage() {
     const params = useParams();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [groups, setGroups] = useState([]);
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
@@ -33,7 +21,20 @@ export default function EditContactPage() {
 
     useEffect(() => {
         fetchContact();
+        fetchGroups();
     }, [params.id]);
+
+    const fetchGroups = async () => {
+        try {
+            const res = await fetch("/api/groups");
+            if (res.ok) {
+                const data = await res.json();
+                setGroups(data.groups || []);
+            }
+        } catch (error) {
+            console.error("Failed to fetch groups:", error);
+        }
+    };
 
     const fetchContact = async () => {
         try {
@@ -199,9 +200,10 @@ export default function EditContactPage() {
                             onChange={handleChange}
                             className="select select-bordered w-full"
                         >
-                            {CONTACT_GROUPS.map((group) => (
-                                <option key={group.value} value={group.value}>
-                                    {group.label}
+                            <option value="">Select a group...</option>
+                            {groups.map((group) => (
+                                <option key={group} value={group}>
+                                    {group}
                                 </option>
                             ))}
                         </select>

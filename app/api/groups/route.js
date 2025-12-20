@@ -140,6 +140,26 @@ export async function DELETE(req) {
             return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }
 
+        // Check if any contacts are using this group
+        const { data: contactsWithGroup, error: checkError } = await supabase
+            .from("contacts")
+            .select("id")
+            .eq("organization_id", org.id)
+            .contains("tags", [name])
+            .limit(1);
+
+        if (checkError) {
+            console.error("Error checking contacts:", checkError);
+            return NextResponse.json({ error: "Failed to check group usage" }, { status: 500 });
+        }
+
+        if (contactsWithGroup && contactsWithGroup.length > 0) {
+            return NextResponse.json(
+                { error: `Cannot delete "${name}" - this group is assigned to one or more contacts. Please remove this group from all contacts first.` },
+                { status: 400 }
+            );
+        }
+
         // Use existing custom_groups or default groups
         const currentGroups = org.custom_groups?.length > 0 ? org.custom_groups : [...DEFAULT_GROUPS];
         const updatedGroups = currentGroups.filter(g => g !== name);
