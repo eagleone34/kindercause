@@ -5,8 +5,8 @@ import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import apiClient from "@/libs/api";
 
-// Predefined contact groups
-const CONTACT_GROUPS = [
+// Default contact groups (can't be deleted)
+const DEFAULT_GROUPS = [
     "Parents",
     "Volunteers",
     "Donors",
@@ -22,6 +22,9 @@ export default function SettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [organization, setOrganization] = useState(null);
+    const [groups, setGroups] = useState([]);
+    const [customGroups, setCustomGroups] = useState([]);
+    const [newGroupName, setNewGroupName] = useState("");
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -35,6 +38,7 @@ export default function SettingsPage() {
 
     useEffect(() => {
         fetchOrganization();
+        fetchGroups();
     }, []);
 
     const fetchOrganization = async () => {
@@ -58,6 +62,67 @@ export default function SettingsPage() {
             console.error(error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchGroups = async () => {
+        try {
+            const res = await fetch("/api/groups");
+            if (res.ok) {
+                const data = await res.json();
+                setGroups(data.groups || []);
+                setCustomGroups(data.customGroups || []);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleAddGroup = async () => {
+        if (!newGroupName.trim()) {
+            toast.error("Group name is required");
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/groups", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: newGroupName.trim() }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to add group");
+            }
+
+            toast.success("Group added!");
+            setNewGroupName("");
+            fetchGroups();
+        } catch (error) {
+            toast.error(error.message);
+        }
+    };
+
+    const handleDeleteGroup = async (groupName) => {
+        if (!confirm(`Delete group "${groupName}"? Contacts in this group will not be deleted.`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/groups?name=${encodeURIComponent(groupName)}`, {
+                method: "DELETE",
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to delete group");
+            }
+
+            toast.success("Group deleted!");
+            fetchGroups();
+        } catch (error) {
+            toast.error(error.message);
         }
     };
 
@@ -281,6 +346,75 @@ export default function SettingsPage() {
                         <div>
                             <p className="font-medium text-lg">{session?.user?.name}</p>
                             <p className="text-base-content/60">{session?.user?.email}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Contact Groups */}
+                <div className="bg-base-100 p-8 rounded-xl shadow-sm border border-base-200">
+                    <h2 className="text-xl font-bold mb-6">Contact Groups</h2>
+                    <p className="text-base-content/60 mb-4">
+                        Organize your contacts into groups for targeted email campaigns.
+                    </p>
+
+                    {/* Default Groups */}
+                    <div className="mb-6">
+                        <h3 className="font-medium mb-3">Default Groups</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {DEFAULT_GROUPS.map((group) => (
+                                <span key={group} className="badge badge-lg badge-outline">
+                                    {group}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Custom Groups */}
+                    <div className="mb-6">
+                        <h3 className="font-medium mb-3">Custom Groups</h3>
+                        {customGroups.length === 0 ? (
+                            <p className="text-base-content/50 text-sm">No custom groups yet</p>
+                        ) : (
+                            <div className="flex flex-wrap gap-2">
+                                {customGroups.map((group) => (
+                                    <span key={group} className="badge badge-lg gap-1">
+                                        {group}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteGroup(group)}
+                                            className="hover:text-error"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Add New Group */}
+                    <div className="form-control">
+                        <label className="label">
+                            <span className="label-text font-medium">Add New Group</span>
+                        </label>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={newGroupName}
+                                onChange={(e) => setNewGroupName(e.target.value)}
+                                placeholder="Enter group name..."
+                                className="input input-bordered flex-1"
+                                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddGroup())}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleAddGroup}
+                                className="btn btn-primary"
+                            >
+                                Add Group
+                            </button>
                         </div>
                     </div>
                 </div>

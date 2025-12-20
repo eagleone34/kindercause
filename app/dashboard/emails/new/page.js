@@ -1,38 +1,55 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
 export default function NewEmailCampaignPage() {
   const router = useRouter();
+  const searchRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [contacts, setContacts] = useState([]);
-  const [allTags, setAllTags] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [formData, setFormData] = useState({
     subject: "",
     body: "",
-    selectedTags: [],
+    selectedGroups: [],
+    selectedContacts: [], // Individual contacts
   });
   const [recipientCount, setRecipientCount] = useState(0);
 
   useEffect(() => {
     fetchContacts();
+    fetchGroups();
   }, []);
 
   useEffect(() => {
-    // Calculate recipient count based on selected tags
-    if (formData.selectedTags.length === 0) {
+    // Calculate recipient count
+    let recipients = new Set();
+
+    // Add contacts from selected groups
+    if (formData.selectedGroups.length > 0) {
+      contacts.forEach((c) => {
+        if (formData.selectedGroups.some((g) => c.tags?.includes(g))) {
+          recipients.add(c.id);
+        }
+      });
+    }
+
+    // Add individually selected contacts
+    formData.selectedContacts.forEach((c) => recipients.add(c.id));
+
+    // If nothing selected, all contacts
+    if (formData.selectedGroups.length === 0 && formData.selectedContacts.length === 0) {
       setRecipientCount(contacts.length);
     } else {
-      const filtered = contacts.filter((c) =>
-        formData.selectedTags.some((tag) => c.tags?.includes(tag))
-      );
-      setRecipientCount(filtered.length);
+      setRecipientCount(recipients.size);
     }
-  }, [formData.selectedTags, contacts]);
+  }, [formData.selectedGroups, formData.selectedContacts, contacts]);
 
   const fetchContacts = async () => {
     try {
@@ -40,14 +57,22 @@ export default function NewEmailCampaignPage() {
       const data = await res.json();
       if (data.contacts) {
         setContacts(data.contacts);
-        // Extract unique tags
-        const tags = new Set();
-        data.contacts.forEach((c) => c.tags?.forEach((t) => tags.add(t)));
-        setAllTags(Array.from(tags));
       }
     } catch (error) {
       console.error(error);
       toast.error("Failed to load contacts");
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const res = await fetch("/api/groups");
+      const data = await res.json();
+      if (data.groups) {
+        setGroups(data.groups);
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -56,14 +81,40 @@ export default function NewEmailCampaignPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const toggleTag = (tag) => {
+  const toggleGroup = (group) => {
     setFormData((prev) => ({
       ...prev,
-      selectedTags: prev.selectedTags.includes(tag)
-        ? prev.selectedTags.filter((t) => t !== tag)
-        : [...prev.selectedTags, tag],
+      selectedGroups: prev.selectedGroups.includes(group)
+        ? prev.selectedGroups.filter((g) => g !== group)
+        : [...prev.selectedGroups, group],
     }));
   };
+
+  const addContact = (contact) => {
+    if (!formData.selectedContacts.find((c) => c.id === contact.id)) {
+      setFormData((prev) => ({
+        ...prev,
+        selectedContacts: [...prev.selectedContacts, contact],
+      }));
+    }
+    setSearchTerm("");
+    setShowSuggestions(false);
+  };
+
+  const removeContact = (contactId) => {
+    setFormData((prev) => ({
+      ...prev,
+      selectedContacts: prev.selectedContacts.filter((c) => c.id !== contactId),
+    }));
+  };
+
+  const filteredSuggestions = contacts.filter((c) => {
+    const name = `${c.first_name || ""} ${c.last_name || ""}`.toLowerCase();
+    const term = searchTerm.toLowerCase();
+    const matches = name.includes(term) || c.email.toLowerCase().includes(term);
+    const notAlreadySelected = !formData.selectedContacts.find((sc) => sc.id === c.id);
+    return matches && notAlreadySelected && term.length > 0;
+  }).slice(0, 5);
 
   const handleSaveDraft = async () => {
     if (!formData.subject) {
@@ -77,7 +128,9 @@ export default function NewEmailCampaignPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          subject: formData.subject,
+          body: formData.body,
+          selectedTags: formData.selectedGroups,
           status: "draft",
         }),
       });
@@ -117,7 +170,10 @@ export default function NewEmailCampaignPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          subject: formData.subject,
+          body: formData.body,
+          selectedTags: formData.selectedGroups,
+          selectedContactIds: formData.selectedContacts.map((c) => c.id),
           recipientCount,
         }),
       });
@@ -163,30 +219,92 @@ export default function NewEmailCampaignPage() {
               {recipientCount} contacts
             </div>
             <span className="text-sm text-base-content/60">
-              {formData.selectedTags.length === 0
+              {formData.selectedGroups.length === 0 && formData.selectedContacts.length === 0
                 ? "All contacts"
-                : `Filtered by ${formData.selectedTags.length} tag(s)`}
+                : `${formData.selectedGroups.length} group(s), ${formData.selectedContacts.length} individual(s)`}
             </span>
           </div>
 
-          {allTags.length > 0 && (
-            <div>
+          {/* Search for contacts */}
+          <div className="form-control mb-4">
+            <label className="label">
+              <span className="label-text font-medium">Search Contacts</span>
+            </label>
+            <div className="relative">
+              <input
+                ref={searchRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                placeholder="Type a name or email..."
+                className="input input-bordered w-full"
+              />
+              {showSuggestions && filteredSuggestions.length > 0 && (
+                <ul className="absolute z-50 w-full mt-1 bg-base-100 border border-base-300 rounded-box shadow-lg max-h-48 overflow-auto">
+                  {filteredSuggestions.map((c) => (
+                    <li
+                      key={c.id}
+                      className="px-4 py-2 hover:bg-base-200 cursor-pointer"
+                      onClick={() => addContact(c)}
+                    >
+                      <div className="font-medium">
+                        {c.first_name} {c.last_name}
+                      </div>
+                      <div className="text-sm text-base-content/60">{c.email}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {/* Selected individual contacts */}
+          {formData.selectedContacts.length > 0 && (
+            <div className="mb-4">
               <label className="label">
-                <span className="label-text font-medium">Filter by tags</span>
-                <span className="label-text-alt">Optional</span>
+                <span className="label-text font-medium">Selected Contacts</span>
               </label>
               <div className="flex flex-wrap gap-2">
-                {allTags.map((tag) => (
-                  <button
-                    key={tag}
-                    className={`badge badge-lg cursor-pointer ${formData.selectedTags.includes(tag)
-                        ? "badge-primary"
-                        : "badge-outline"
-                      }`}
-                    onClick={() => toggleTag(tag)}
+                {formData.selectedContacts.map((c) => (
+                  <div
+                    key={c.id}
+                    className="badge badge-lg gap-1"
                   >
-                    {tag}
-                    {formData.selectedTags.includes(tag) && (
+                    {c.first_name} {c.last_name}
+                    <button onClick={() => removeContact(c.id)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Filter by groups */}
+          {groups.length > 0 && (
+            <div>
+              <label className="label">
+                <span className="label-text font-medium">Select Groups</span>
+                <span className="label-text-alt">Send to all contacts in these groups</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {groups.map((group) => (
+                  <button
+                    key={group}
+                    className={`badge badge-lg cursor-pointer ${formData.selectedGroups.includes(group)
+                      ? "badge-primary"
+                      : "badge-outline"
+                      }`}
+                    onClick={() => toggleGroup(group)}
+                  >
+                    {group}
+                    {formData.selectedGroups.includes(group) && (
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 ml-1">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                       </svg>
@@ -198,7 +316,7 @@ export default function NewEmailCampaignPage() {
           )}
 
           {contacts.length === 0 && (
-            <div className="alert alert-warning">
+            <div className="alert alert-warning mt-4">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
               </svg>
