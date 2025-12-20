@@ -52,19 +52,24 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { name, email, phone, tags } = body;
+    const { first_name, last_name, name, email, phone, tags } = body;
 
-    if (!name || !email) {
+    // Support both name (combined) and first_name/last_name (separate)
+    let firstName = first_name;
+    let lastName = last_name;
+
+    if (name && !firstName) {
+      const nameParts = name.trim().split(" ");
+      firstName = nameParts[0];
+      lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
+    }
+
+    if (!firstName || !email) {
       return NextResponse.json(
-        { error: "Name and email are required" },
+        { error: "First name and email are required" },
         { status: 400 }
       );
     }
-
-    // Split name into first_name and last_name
-    const nameParts = name.trim().split(" ");
-    const first_name = nameParts[0];
-    const last_name = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
 
     const supabase = createAdminSupabaseClient();
 
@@ -97,8 +102,8 @@ export async function POST(req) {
       .from("contacts")
       .insert({
         organization_id: org.id,
-        first_name,
-        last_name,
+        first_name: firstName,
+        last_name: lastName || null,
         email: email.toLowerCase().trim(),
         phone: phone || null,
         tags: tags || [],

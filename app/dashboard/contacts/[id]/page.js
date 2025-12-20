@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
@@ -18,9 +18,11 @@ const CONTACT_GROUPS = [
     { value: "Other", label: "Other" },
 ];
 
-export default function NewContactPage() {
+export default function EditContactPage() {
+    const params = useParams();
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
@@ -28,6 +30,37 @@ export default function NewContactPage() {
         phone: "",
         group: "",
     });
+
+    useEffect(() => {
+        fetchContact();
+    }, [params.id]);
+
+    const fetchContact = async () => {
+        try {
+            const res = await fetch(`/api/contacts/${params.id}`);
+            if (!res.ok) {
+                if (res.status === 404) {
+                    toast.error("Contact not found");
+                    router.push("/dashboard/contacts");
+                    return;
+                }
+                throw new Error("Failed to fetch contact");
+            }
+            const data = await res.json();
+            setFormData({
+                first_name: data.first_name || "",
+                last_name: data.last_name || "",
+                email: data.email || "",
+                phone: data.phone || "",
+                group: data.tags?.[0] || "",
+            });
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to load contact");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -39,11 +72,11 @@ export default function NewContactPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
+        setIsSaving(true);
 
         try {
-            const res = await fetch("/api/contacts", {
-                method: "POST",
+            const res = await fetch(`/api/contacts/${params.id}`, {
+                method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     first_name: formData.first_name,
@@ -56,17 +89,25 @@ export default function NewContactPage() {
 
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.error || "Failed to create contact");
+                throw new Error(data.error || "Failed to update contact");
             }
 
-            toast.success("Contact added successfully!");
+            toast.success("Contact updated successfully!");
             router.push("/dashboard/contacts");
         } catch (error) {
             toast.error(error.message);
         } finally {
-            setIsLoading(false);
+            setIsSaving(false);
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-[50vh]">
+                <span className="loading loading-spinner loading-lg" />
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-xl mx-auto">
@@ -81,9 +122,9 @@ export default function NewContactPage() {
                     </svg>
                     Back to Contacts
                 </Link>
-                <h1 className="text-2xl font-bold">Add New Contact</h1>
+                <h1 className="text-2xl font-bold">Edit Contact</h1>
                 <p className="text-base-content/70">
-                    Add a parent or donor to your contact list
+                    Update contact information
                 </p>
             </div>
 
@@ -175,10 +216,10 @@ export default function NewContactPage() {
                     <button
                         type="submit"
                         className="btn btn-primary"
-                        disabled={isLoading}
+                        disabled={isSaving}
                     >
-                        {isLoading && <span className="loading loading-spinner loading-sm" />}
-                        {isLoading ? "Adding..." : "Add Contact"}
+                        {isSaving && <span className="loading loading-spinner loading-sm" />}
+                        {isSaving ? "Saving..." : "Save Changes"}
                     </button>
                     <Link href="/dashboard/contacts" className="btn btn-ghost">
                         Cancel
