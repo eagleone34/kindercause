@@ -13,22 +13,29 @@ export async function GET() {
     const supabase = createAdminSupabaseClient();
 
     // Get the user's organization
-    const { data: org } = await supabase
+    const { data: org, error: orgError } = await supabase
       .from("organizations")
       .select("id")
       .eq("user_id", session.user.id)
       .single();
 
+    if (orgError) {
+      console.error("Error fetching organization:", orgError);
+      // If no org found, return empty contacts
+      if (orgError.code === "PGRST116") {
+        return NextResponse.json({ contacts: [] });
+      }
+    }
+
     if (!org) {
       return NextResponse.json({ contacts: [] });
     }
 
-    // Get contacts
+    // Get contacts (excluding unsubscribed if column exists)
     const { data: contacts, error } = await supabase
       .from("contacts")
       .select("*")
       .eq("organization_id", org.id)
-      .eq("unsubscribed", false)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -36,7 +43,10 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ contacts });
+    // Filter out unsubscribed contacts client-side if the field exists
+    const activeContacts = contacts?.filter(c => c.unsubscribed !== true) || [];
+
+    return NextResponse.json({ contacts: activeContacts });
   } catch (error) {
     console.error("Error in GET /api/contacts:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
