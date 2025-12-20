@@ -131,7 +131,7 @@ export default function NewEmailCampaignPage() {
   };
 
   // Replace smart variables in text
-  const replaceVariables = (text) => {
+  const replaceVariables = (text, forPreview = false) => {
     if (!text) return text;
 
     let result = text;
@@ -141,9 +141,25 @@ export default function NewEmailCampaignPage() {
       result = result.replace(/\{\{organization_name\}\}/g, organization.name || "");
     }
 
+    // For preview, show first_name as example
+    if (forPreview) {
+      result = result.replace(/\{\{first_name\}\}/g, "Sarah");
+    }
+
     // Fundraiser/Event variables
     if (fundraiser) {
       result = result.replace(/\{\{event_name\}\}/g, fundraiser.name || "");
+      result = result.replace(/\{\{event_start_date\}\}/g,
+        fundraiser.start_date ? new Date(fundraiser.start_date).toLocaleDateString('en-US', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        }) : ""
+      );
+      result = result.replace(/\{\{event_end_date\}\}/g,
+        fundraiser.end_date ? new Date(fundraiser.end_date).toLocaleDateString('en-US', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        }) : ""
+      );
+      // Legacy support for {{event_date}}
       result = result.replace(/\{\{event_date\}\}/g,
         fundraiser.start_date ? new Date(fundraiser.start_date).toLocaleDateString('en-US', {
           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -579,20 +595,55 @@ export default function NewEmailCampaignPage() {
                 📝 Available Variables (click to copy)
               </div>
               <div className="collapse-content">
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {SMART_VARIABLES.map((v) => (
-                    <button
-                      key={v.variable}
-                      className="badge badge-outline cursor-pointer hover:badge-primary"
-                      onClick={() => {
-                        navigator.clipboard.writeText(v.variable);
-                        toast.success(`Copied ${v.variable}`);
-                      }}
-                      title={v.description}
-                    >
-                      {v.variable}
-                    </button>
-                  ))}
+                <div className="space-y-3 pt-2">
+                  {/* Always available variables */}
+                  <div>
+                    <p className="text-xs text-base-content/60 mb-2">Always available:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {SMART_VARIABLES.filter(v => !v.requiresEvent).map((v) => (
+                        <button
+                          key={v.variable}
+                          className="badge badge-outline cursor-pointer hover:badge-primary"
+                          onClick={() => {
+                            navigator.clipboard.writeText(v.variable);
+                            toast.success(`Copied ${v.variable}`);
+                          }}
+                          title={v.description}
+                        >
+                          {v.variable}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Event variables */}
+                  <div>
+                    <p className="text-xs text-base-content/60 mb-2">
+                      Event variables {!fundraiser && <span className="text-warning">(select an event above to use these)</span>}:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {SMART_VARIABLES.filter(v => v.requiresEvent).map((v) => (
+                        <button
+                          key={v.variable}
+                          className={`badge cursor-pointer ${fundraiser
+                              ? "badge-outline hover:badge-primary"
+                              : "badge-ghost opacity-50 cursor-not-allowed"
+                            }`}
+                          onClick={() => {
+                            if (!fundraiser) {
+                              toast.error("Select an event first to use this variable");
+                              return;
+                            }
+                            navigator.clipboard.writeText(v.variable);
+                            toast.success(`Copied ${v.variable}`);
+                          }}
+                          title={fundraiser ? v.description : "Select an event first"}
+                        >
+                          {v.variable}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -602,14 +653,17 @@ export default function NewEmailCampaignPage() {
         {/* Preview */}
         {(formData.subject || formData.body) && (
           <div className="bg-base-100 rounded-box shadow p-6">
-            <h2 className="font-semibold mb-4">Preview</h2>
+            <h2 className="font-semibold mb-4">📧 Preview</h2>
+            <p className="text-sm text-base-content/60 mb-3">
+              This is how your email will look. Variables are replaced with actual values.
+            </p>
             <div className="border border-base-300 rounded-lg p-4 bg-white">
               <div className="border-b border-base-200 pb-3 mb-3">
                 <p className="text-sm text-base-content/60">Subject:</p>
-                <p className="font-medium">{formData.subject || "(No subject)"}</p>
+                <p className="font-medium">{replaceVariables(formData.subject, true) || "(No subject)"}</p>
               </div>
               <div className="whitespace-pre-wrap text-sm">
-                {formData.body || "(No message)"}
+                {replaceVariables(formData.body, true) || "(No message)"}
               </div>
               <div className="mt-6 pt-4 border-t border-base-200 text-xs text-base-content/50">
                 <p>—</p>

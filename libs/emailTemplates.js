@@ -1,6 +1,6 @@
 // Email templates with smart variables
-// Variables: {{first_name}}, {{organization_name}}, {{event_name}}, {{event_date}}, 
-//            {{event_location}}, {{ticket_price}}, {{purchase_link}}, {{donate_link}}
+// Variables: {{first_name}}, {{organization_name}}, {{event_name}}, {{event_start_date}}, 
+//            {{event_end_date}}, {{event_location}}, {{ticket_price}}, {{purchase_link}}, {{donate_link}}
 
 export const EMAIL_TEMPLATES = [
     // Event Templates
@@ -11,7 +11,7 @@ export const EMAIL_TEMPLATES = [
         emoji: "🎟️",
         description: "Announce a new event to your contacts",
         subject: "You're Invited: {{event_name}}!",
-        body: "Hi {{first_name}},\n\nWe're excited to invite you to {{event_name}}!\n\n📅 Date: {{event_date}}\n📍 Location: {{event_location}}\n🎟️ Tickets: ${{ticket_price}}\n\nThis is going to be a wonderful event for our community, and we'd love to see you there.\n\nGet your tickets here: {{purchase_link}}\n\nLooking forward to seeing you!\n\nWarm regards,\n{{organization_name}}",
+        body: "Hi {{first_name}},\n\nWe're excited to invite you to {{event_name}}!\n\n📅 Date: {{event_start_date}}\n📍 Location: {{event_location}}\n🎟️ Tickets: ${{ticket_price}}\n\nThis is going to be a wonderful event for our community, and we'd love to see you there.\n\nGet your tickets here: {{purchase_link}}\n\nLooking forward to seeing you!\n\nWarm regards,\n{{organization_name}}",
     },
     {
         id: "event_reminder",
@@ -20,7 +20,7 @@ export const EMAIL_TEMPLATES = [
         emoji: "⏰",
         description: "Remind attendees about an upcoming event",
         subject: "Reminder: {{event_name}} is Coming Up!",
-        body: "Hi {{first_name}},\n\nJust a friendly reminder that {{event_name}} is coming up soon!\n\n📅 Date: {{event_date}}\n📍 Location: {{event_location}}\n\nWe can't wait to see you there. If you haven't gotten your tickets yet, there's still time:\n{{purchase_link}}\n\nSee you soon!\n\n{{organization_name}}",
+        body: "Hi {{first_name}},\n\nJust a friendly reminder that {{event_name}} is coming up soon!\n\n📅 Date: {{event_start_date}}\n📍 Location: {{event_location}}\n\nWe can't wait to see you there. If you haven't gotten your tickets yet, there's still time:\n{{purchase_link}}\n\nSee you soon!\n\n{{organization_name}}",
     },
     {
         id: "post_event_thankyou",
@@ -79,14 +79,17 @@ export const TEMPLATE_CATEGORIES = [
     { id: "general", name: "General", emoji: "📧" },
 ];
 
-// Smart variables that can be auto-replaced
+// Smart variables - some require an event to be selected
 export const SMART_VARIABLES = [
-    { variable: "{{first_name}}", description: "Recipient's first name", example: "Sarah" },
-    { variable: "{{organization_name}}", description: "Your organization name", example: "Sunshine Daycare" },
-    { variable: "{{event_name}}", description: "Event or campaign name", example: "Spring Gala 2024" },
-    { variable: "{{event_date}}", description: "Event date", example: "March 15, 2024" },
-    { variable: "{{event_location}}", description: "Event location", example: "Community Center" },
-    { variable: "{{ticket_price}}", description: "Ticket price", example: "25" },
-    { variable: "{{purchase_link}}", description: "Link to purchase tickets", example: "https://..." },
-    { variable: "{{donate_link}}", description: "Link to donate", example: "https://..." },
+    // Always available
+    { variable: "{{first_name}}", description: "Recipient's first name", example: "Sarah", requiresEvent: false },
+    { variable: "{{organization_name}}", description: "Your organization name", example: "Sunshine Daycare", requiresEvent: false },
+    // Requires event selection
+    { variable: "{{event_name}}", description: "Event or campaign name", example: "Spring Gala 2024", requiresEvent: true },
+    { variable: "{{event_start_date}}", description: "Event start date", example: "March 15, 2024", requiresEvent: true },
+    { variable: "{{event_end_date}}", description: "Event end date", example: "March 16, 2024", requiresEvent: true },
+    { variable: "{{event_location}}", description: "Event location", example: "Community Center", requiresEvent: true },
+    { variable: "{{ticket_price}}", description: "Ticket price", example: "25", requiresEvent: true },
+    { variable: "{{purchase_link}}", description: "Link to purchase tickets", example: "https://...", requiresEvent: true },
+    { variable: "{{donate_link}}", description: "Link to donate", example: "https://...", requiresEvent: true },
 ];
