@@ -11,22 +11,7 @@ export const EMAIL_TEMPLATES = [
         emoji: "🎟️",
         description: "Announce a new event to your contacts",
         subject: "You're Invited: {{event_name}}!",
-        body: `Hi {{first_name}},
-
-We're excited to invite you to {{event_name}}!
-
-📅 Date: {{event_date}}
-📍 Location: {{event_location}}
-🎟️ Tickets: ${{ ticket_price }}
-
-This is going to be a wonderful event for our community, and we'd love to see you there.
-
-Get your tickets here: {{purchase_link}}
-
-Looking forward to seeing you!
-
-Warm regards,
-{{organization_name}}`,
+        body: "Hi {{first_name}},\n\nWe're excited to invite you to {{event_name}}!\n\n📅 Date: {{event_date}}\n📍 Location: {{event_location}}\n🎟️ Tickets: ${{ticket_price}}\n\nThis is going to be a wonderful event for our community, and we'd love to see you there.\n\nGet your tickets here: {{purchase_link}}\n\nLooking forward to seeing you!\n\nWarm regards,\n{{organization_name}}",
     },
     {
         id: "event_reminder",
@@ -35,19 +20,7 @@ Warm regards,
         emoji: "⏰",
         description: "Remind attendees about an upcoming event",
         subject: "Reminder: {{event_name}} is Coming Up!",
-        body: `Hi {{first_name}},
-
-Just a friendly reminder that {{event_name}} is coming up soon!
-
-📅 Date: {{event_date}}
-📍 Location: {{event_location}}
-
-We can't wait to see you there. If you haven't gotten your tickets yet, there's still time:
-{{purchase_link}}
-
-See you soon!
-
-{{organization_name}}`,
+        body: "Hi {{first_name}},\n\nJust a friendly reminder that {{event_name}} is coming up soon!\n\n📅 Date: {{event_date}}\n📍 Location: {{event_location}}\n\nWe can't wait to see you there. If you haven't gotten your tickets yet, there's still time:\n{{purchase_link}}\n\nSee you soon!\n\n{{organization_name}}",
     },
     {
         id: "post_event_thankyou",
@@ -56,16 +29,7 @@ See you soon!
         emoji: "🙏",
         description: "Thank attendees after an event",
         subject: "Thank You for Attending {{event_name}}!",
-        body: `Hi {{first_name}},
-
-Thank you so much for joining us at {{event_name}}! We hope you had a wonderful time.
-
-Your support means the world to our community. Together, we're making a real difference for our children.
-
-We'd love to hear your feedback! Simply reply to this email with any thoughts or suggestions.
-
-Until next time,
-{{organization_name}}`,
+        body: "Hi {{first_name}},\n\nThank you so much for joining us at {{event_name}}! We hope you had a wonderful time.\n\nYour support means the world to our community. Together, we're making a real difference for our children.\n\nWe'd love to hear your feedback! Simply reply to this email with any thoughts or suggestions.\n\nUntil next time,\n{{organization_name}}",
     },
 
     // Fundraising Templates
@@ -76,18 +40,7 @@ Until next time,
         emoji: "💝",
         description: "Ask for support for your campaign",
         subject: "Help Us Reach Our Goal: {{event_name}}",
-        body: `Hi {{first_name}},
-
-We're reaching out to ask for your support with {{event_name}}.
-
-Every donation, no matter the size, makes a meaningful difference for our children. Your generosity helps us provide enriching experiences and resources that might otherwise be out of reach.
-
-Donate today: {{donate_link}}
-
-Thank you for being part of our community!
-
-With gratitude,
-{{organization_name}}`,
+        body: "Hi {{first_name}},\n\nWe're reaching out to ask for your support with {{event_name}}.\n\nEvery donation, no matter the size, makes a meaningful difference for our children. Your generosity helps us provide enriching experiences and resources that might otherwise be out of reach.\n\nDonate today: {{donate_link}}\n\nThank you for being part of our community!\n\nWith gratitude,\n{{organization_name}}",
     },
     {
         id: "donation_thankyou",
@@ -96,17 +49,7 @@ With gratitude,
         emoji: "❤️",
         description: "Thank donors for their contribution",
         subject: "Thank You for Your Generous Donation!",
-        body: `Hi {{first_name}},
-
-We're incredibly grateful for your generous donation to {{event_name}}!
-
-Your support directly impacts the children in our community. Thanks to donors like you, we can continue to provide amazing experiences and opportunities.
-
-We'll keep you updated on how your donation is making a difference.
-
-From the bottom of our hearts, thank you!
-
-{{organization_name}}`,
+        body: "Hi {{first_name}},\n\nWe're incredibly grateful for your generous donation to {{event_name}}!\n\nYour support directly impacts the children in our community. Thanks to donors like you, we can continue to provide amazing experiences and opportunities.\n\nWe'll keep you updated on how your donation is making a difference.\n\nFrom the bottom of our hearts, thank you!\n\n{{organization_name}}",
     },
 
     // General Templates
@@ -117,22 +60,7 @@ From the bottom of our hearts, thank you!
         emoji: "📧",
         description: "Monthly update for your community",
         subject: "{{organization_name}} Monthly Update",
-        body: `Hi {{first_name}},
-
-Here's what's happening at {{organization_name}}!
-
-📰 UPDATES
-- [Share recent news or achievements]
-- [Highlight a success story]
-
-📅 UPCOMING EVENTS
-- [List upcoming events with dates]
-
-🙏 THANK YOU
-Thank you for being part of our community. Your support makes everything we do possible.
-
-Best wishes,
-{{organization_name}}`,
+        body: "Hi {{first_name}},\n\nHere's what's happening at {{organization_name}}!\n\n📰 UPDATES\n- [Share recent news or achievements]\n- [Highlight a success story]\n\n📅 UPCOMING EVENTS\n- [List upcoming events with dates]\n\n🙏 THANK YOU\nThank you for being part of our community. Your support makes everything we do possible.\n\nBest wishes,\n{{organization_name}}",
     },
     {
         id: "welcome",
@@ -141,19 +69,7 @@ Best wishes,
         emoji: "👋",
         description: "Welcome new families to your community",
         subject: "Welcome to {{organization_name}}!",
-        body: `Hi {{first_name}},
-
-Welcome to the {{organization_name}} family! We're so excited to have you join our community.
-
-Here's what you can expect:
-• Regular updates on events and activities
-• Opportunities to get involved
-• A supportive community of families
-
-If you have any questions, just reply to this email – we're always happy to help!
-
-Looking forward to an amazing journey together,
-{{organization_name}}`,
+        body: "Hi {{first_name}},\n\nWelcome to the {{organization_name}} family! We're so excited to have you join our community.\n\nHere's what you can expect:\n• Regular updates on events and activities\n• Opportunities to get involved\n• A supportive community of families\n\nIf you have any questions, just reply to this email – we're always happy to help!\n\nLooking forward to an amazing journey together,\n{{organization_name}}",
     },
 ];
 
