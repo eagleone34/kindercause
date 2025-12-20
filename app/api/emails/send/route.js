@@ -2,6 +2,51 @@ import { NextResponse } from "next/server";
 import { auth } from "@/libs/auth";
 import { createAdminSupabaseClient } from "@/libs/supabase";
 
+// Helper function to replace variables in text for a specific recipient
+function replaceVariables(text, recipient, organization, fundraiser) {
+  if (!text) return text;
+
+  let result = text;
+
+  // Recipient variables
+  result = result.replace(/\{\{first_name\}\}/g, recipient.first_name || "");
+  result = result.replace(/\{\{last_name\}\}/g, recipient.last_name || "");
+
+  // Organization variables
+  if (organization) {
+    result = result.replace(/\{\{organization_name\}\}/g, organization.name || "");
+  }
+
+  // Fundraiser/Event variables
+  if (fundraiser) {
+    result = result.replace(/\{\{event_name\}\}/g, fundraiser.name || "");
+    result = result.replace(/\{\{event_start_date\}\}/g,
+      fundraiser.start_date ? new Date(fundraiser.start_date).toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      }) : ""
+    );
+    result = result.replace(/\{\{event_end_date\}\}/g,
+      fundraiser.end_date ? new Date(fundraiser.end_date).toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      }) : ""
+    );
+    // Legacy support for {{event_date}}
+    result = result.replace(/\{\{event_date\}\}/g,
+      fundraiser.start_date ? new Date(fundraiser.start_date).toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      }) : ""
+    );
+    result = result.replace(/\{\{event_location\}\}/g, fundraiser.location || "");
+    result = result.replace(/\{\{ticket_price\}\}/g, fundraiser.ticket_price?.toString() || "");
+
+    const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.kindercause.com"}/${organization?.slug || ""}/${fundraiser.slug || ""}`;
+    result = result.replace(/\{\{purchase_link\}\}/g, publicUrl);
+    result = result.replace(/\{\{donate_link\}\}/g, publicUrl);
+  }
+
+  return result;
+}
+
 // POST /api/emails/send - Send an email campaign
 export async function POST(req) {
   try {
@@ -11,7 +56,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { subject, body: emailBody, selectedTags } = body;
+    const { subject, body: emailBody, selectedTags, fundraiserId } = body;
 
     if (!subject || !emailBody) {
       return NextResponse.json({ error: "Subject and message are required" }, { status: 400 });
@@ -19,10 +64,10 @@ export async function POST(req) {
 
     const supabase = createAdminSupabaseClient();
 
-    // Get the user's organization
+    // Get the user's organization (with slug for building URLs)
     const { data: org, error: orgError } = await supabase
       .from("organizations")
-      .select("id")
+      .select("id, name, slug")
       .eq("user_id", session.user.id)
       .single();
 
@@ -31,6 +76,18 @@ export async function POST(req) {
     }
 
     const organizationId = org.id;
+
+    // Get the fundraiser if one was selected
+    let fundraiser = null;
+    if (fundraiserId) {
+      const { data: fr } = await supabase
+        .from("fundraisers")
+        .select("*")
+        .eq("id", fundraiserId)
+        .eq("organization_id", organizationId)
+        .single();
+      fundraiser = fr;
+    }
 
     // Get contacts based on tag filter
     let query = supabase
@@ -77,57 +134,21 @@ export async function POST(req) {
       return NextResponse.json({ error: "Failed to create campaign" }, { status: 500 });
     }
 
-    // Send emails via SendGrid or Resend
-    // In production, this would be an async job
-    // For MVP, we'll use a simple approach
-
+    // Send emails via Resend
     let sentCount = 0;
     const errors = [];
 
-    // Check if SendGrid API key is configured
-    const sendgridApiKey = process.env.SENDGRID_API_KEY;
     const resendApiKey = process.env.RESEND_API_KEY;
     const fromEmail = process.env.EMAIL_FROM || "noreply@kindercause.com";
 
-    if (sendgridApiKey) {
-      // Use SendGrid
-      for (const recipient of recipients) {
-        try {
-          const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${sendgridApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              personalizations: [{
-                to: [{ email: recipient.email, name: `${recipient.first_name || ""} ${recipient.last_name || ""}`.trim() }],
-              }],
-              from: { email: fromEmail, name: "KinderCause" },
-              subject,
-              content: [
-                {
-                  type: "text/plain",
-                  value: `${emailBody}\n\n---\nSent via KinderCause\nUnsubscribe: ${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${recipient.email}`,
-                },
-              ],
-            }),
-          });
-
-          if (response.ok) {
-            sentCount++;
-          } else {
-            const errorData = await response.json();
-            errors.push({ email: recipient.email, error: errorData });
-          }
-        } catch (err) {
-          errors.push({ email: recipient.email, error: err.message });
-        }
-      }
-    } else if (resendApiKey) {
+    if (resendApiKey) {
       // Use Resend
       for (const recipient of recipients) {
         try {
+          // Replace variables for this specific recipient
+          const personalizedSubject = replaceVariables(subject, recipient, org, fundraiser);
+          const personalizedBody = replaceVariables(emailBody, recipient, org, fundraiser);
+
           const response = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: {
@@ -137,8 +158,8 @@ export async function POST(req) {
             body: JSON.stringify({
               from: fromEmail,
               to: recipient.email,
-              subject,
-              text: `${emailBody}\n\n---\nSent via KinderCause`,
+              subject: personalizedSubject,
+              text: `${personalizedBody}\n\n---\nSent via KinderCause`,
             }),
           });
 
@@ -146,9 +167,11 @@ export async function POST(req) {
             sentCount++;
           } else {
             const errorData = await response.json();
+            console.error("Resend error:", errorData);
             errors.push({ email: recipient.email, error: errorData });
           }
         } catch (err) {
+          console.error("Send error:", err);
           errors.push({ email: recipient.email, error: err.message });
         }
       }

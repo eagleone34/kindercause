@@ -285,6 +285,7 @@ export default function NewEmailCampaignPage() {
           selectedTags: formData.selectedGroups,
           selectedContactIds: formData.selectedContacts.map((c) => c.id),
           recipientCount,
+          fundraiserId: fundraiser?.id || null,
         }),
       });
 
@@ -343,19 +344,33 @@ export default function NewEmailCampaignPage() {
                     {category.emoji} {category.name}
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {EMAIL_TEMPLATES.filter(t => t.category === category.id).map((template) => (
-                      <button
-                        key={template.id}
-                        onClick={() => selectTemplate(template)}
-                        className="flex flex-col items-start p-4 border border-base-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
-                      >
-                        <span className="text-2xl mb-2">{template.emoji}</span>
-                        <span className="font-medium text-sm">{template.name}</span>
-                        <span className="text-xs text-base-content/60 mt-1">
-                          {template.description}
-                        </span>
-                      </button>
-                    ))}
+                    {EMAIL_TEMPLATES.filter(t => t.category === category.id).map((template) => {
+                      const isEventTemplate = category.id === "event" || category.id === "fundraising";
+                      const isDisabled = isEventTemplate && !fundraiser;
+
+                      return (
+                        <button
+                          key={template.id}
+                          onClick={() => {
+                            if (isDisabled) {
+                              toast.error("Select an event first to use this template");
+                              return;
+                            }
+                            selectTemplate(template);
+                          }}
+                          className={`flex flex-col items-start p-4 border rounded-lg transition-colors text-left ${isDisabled
+                              ? "border-base-200 opacity-50 cursor-not-allowed bg-base-200/50"
+                              : "border-base-300 hover:border-primary hover:bg-primary/5"
+                            }`}
+                        >
+                          <span className="text-2xl mb-2">{template.emoji}</span>
+                          <span className="font-medium text-sm">{template.name}</span>
+                          <span className="text-xs text-base-content/60 mt-1">
+                            {isDisabled ? "⚠️ Select event first" : template.description}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -626,8 +641,8 @@ export default function NewEmailCampaignPage() {
                         <button
                           key={v.variable}
                           className={`badge cursor-pointer ${fundraiser
-                              ? "badge-outline hover:badge-primary"
-                              : "badge-ghost opacity-50 cursor-not-allowed"
+                            ? "badge-outline hover:badge-primary"
+                            : "badge-ghost opacity-50 cursor-not-allowed"
                             }`}
                           onClick={() => {
                             if (!fundraiser) {
