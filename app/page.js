@@ -1,11 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import config from "@/config";
-import BookDemoModal from "@/components/BookDemoModal";
 import ButtonCheckout from "@/components/ButtonCheckout";
+
+// Lazy load the demo modal - only loaded when needed
+const BookDemoModal = dynamic(() => import("@/components/BookDemoModal"), {
+  loading: () => null,
+  ssr: false,
+});
 
 export default function Page() {
   const { data: session, status } = useSession();
@@ -13,11 +19,13 @@ export default function Page() {
 
   return (
     <>
-      {/* Demo Booking Modal */}
-      <BookDemoModal
-        isOpen={isDemoOpen}
-        onClose={() => setIsDemoOpen(false)}
-      />
+      {/* Demo Booking Modal - Only rendered when opened */}
+      {isDemoOpen && (
+        <BookDemoModal
+          isOpen={isDemoOpen}
+          onClose={() => setIsDemoOpen(false)}
+        />
+      )}
 
       {/* Header */}
       <header className="navbar bg-base-100 max-w-7xl mx-auto px-4">
@@ -35,7 +43,7 @@ export default function Page() {
             Features
           </Link>
           {status === "loading" ? (
-            <span className="loading loading-spinner loading-sm" />
+            <div className="w-20 h-8 bg-base-200 animate-pulse rounded-lg" />
           ) : session ? (
             <Link href="/dashboard" className="btn btn-primary btn-sm">
               Dashboard
