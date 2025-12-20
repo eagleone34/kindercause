@@ -22,7 +22,6 @@ export default function SettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [organization, setOrganization] = useState(null);
-    const [groups, setGroups] = useState([]);
     const [customGroups, setCustomGroups] = useState([]);
     const [newGroupName, setNewGroupName] = useState("");
     const [formData, setFormData] = useState({
@@ -70,7 +69,6 @@ export default function SettingsPage() {
             const res = await fetch("/api/groups");
             if (res.ok) {
                 const data = await res.json();
-                setGroups(data.groups || []);
                 setCustomGroups(data.customGroups || []);
             }
         } catch (error) {
@@ -256,7 +254,7 @@ export default function SettingsPage() {
                                 <span className="font-medium text-primary">{organization?.slug || ""}</span>
                             </div>
                             <label className="label">
-                                <span className="label-text-alt">This is your organization's public page URL</span>
+                                <span className="label-text-alt">This is your organization&apos;s public page URL</span>
                             </label>
                         </div>
                     </div>

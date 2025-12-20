@@ -38,7 +38,7 @@ export async function PUT(req) {
         }
 
         const body = await req.json();
-        const { name, email, phone, website, address, city, state, zip } = body;
+        const { name, phone, website, address, city, state, zip } = body;
 
         if (!name) {
             return NextResponse.json(
