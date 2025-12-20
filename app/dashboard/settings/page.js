@@ -150,8 +150,8 @@ export default function SettingsPage() {
             });
             window.location.href = url;
         } catch (e) {
+            // apiClient already shows toast errors automatically
             console.error(e);
-            toast.error("Unable to open billing portal. Please try again.");
         }
     };
 
