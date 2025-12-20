@@ -55,12 +55,15 @@ export default function NewEmailCampaignPage() {
     try {
       const res = await fetch("/api/contacts");
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch contacts");
+      }
       if (data.contacts) {
         setContacts(data.contacts);
       }
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to load contacts");
+      console.error("Error fetching contacts:", error);
+      toast.error(error.message || "Failed to load contacts");
     }
   };
 
