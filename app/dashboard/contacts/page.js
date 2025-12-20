@@ -4,12 +4,23 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
+// Predefined contact groups
+const CONTACT_GROUPS = [
+  "Parents",
+  "Volunteers",
+  "Donors",
+  "Board Members",
+  "Alumni",
+  "Staff",
+  "Sponsors",
+  "Other",
+];
+
 export default function ContactsPage() {
   const [contacts, setContacts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTag, setSelectedTag] = useState("");
-  const [allTags, setAllTags] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState("");
 
   useEffect(() => {
     fetchContacts();
@@ -21,10 +32,6 @@ export default function ContactsPage() {
       const data = await res.json();
       if (data.contacts) {
         setContacts(data.contacts);
-        // Extract unique tags
-        const tags = new Set();
-        data.contacts.forEach((c) => c.tags?.forEach((t) => tags.add(t)));
-        setAllTags(Array.from(tags));
       }
     } catch (error) {
       console.error(error);
@@ -39,8 +46,9 @@ export default function ContactsPage() {
     const matchesSearch =
       fullName.includes(searchTerm.toLowerCase()) ||
       contact.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTag = !selectedTag || contact.tags?.includes(selectedTag);
-    return matchesSearch && matchesTag;
+    const contactGroup = contact.tags?.[0] || "";
+    const matchesGroup = !selectedGroup || contactGroup === selectedGroup;
+    return matchesSearch && matchesGroup;
   });
 
   const handleDelete = async (id) => {
@@ -104,13 +112,13 @@ export default function ContactsPage() {
         </div>
         <select
           className="select select-bordered w-full sm:w-48"
-          value={selectedTag}
-          onChange={(e) => setSelectedTag(e.target.value)}
+          value={selectedGroup}
+          onChange={(e) => setSelectedGroup(e.target.value)}
         >
-          <option value="">All Tags</option>
-          {allTags.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag}
+          <option value="">All Groups</option>
+          {CONTACT_GROUPS.map((group) => (
+            <option key={group} value={group}>
+              {group}
             </option>
           ))}
         </select>
@@ -129,8 +137,8 @@ export default function ContactsPage() {
           </div>
         </div>
         <div className="stat">
-          <div className="stat-title">Tags Used</div>
-          <div className="stat-value text-accent">{allTags.length}</div>
+          <div className="stat-title">Groups</div>
+          <div className="stat-value text-accent">{CONTACT_GROUPS.length}</div>
         </div>
       </div>
 
@@ -164,7 +172,7 @@ export default function ContactsPage() {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>
-                <th>Tags</th>
+                <th>Group</th>
                 <th>Total Donated</th>
                 <th></th>
               </tr>
@@ -172,7 +180,9 @@ export default function ContactsPage() {
             <tbody>
               {filteredContacts.map((contact) => (
                 <tr key={contact.id} className="hover">
-                  <td className="font-medium">{contact.name}</td>
+                  <td className="font-medium">
+                    {contact.first_name} {contact.last_name}
+                  </td>
                   <td>
                     <a
                       href={`mailto:${contact.email}`}
@@ -185,13 +195,13 @@ export default function ContactsPage() {
                     {contact.phone || "—"}
                   </td>
                   <td>
-                    <div className="flex flex-wrap gap-1">
-                      {contact.tags?.map((tag) => (
-                        <span key={tag} className="badge badge-sm badge-outline">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                    {contact.tags?.[0] ? (
+                      <span className="badge badge-sm badge-outline">
+                        {contact.tags[0]}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td>
                     {contact.total_donated > 0 ? (

@@ -5,6 +5,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
+// Predefined contact groups for categorization
+const CONTACT_GROUPS = [
+    { value: "", label: "Select a group..." },
+    { value: "Parents", label: "Parents" },
+    { value: "Volunteers", label: "Volunteers" },
+    { value: "Donors", label: "Donors" },
+    { value: "Board Members", label: "Board Members" },
+    { value: "Alumni", label: "Alumni" },
+    { value: "Staff", label: "Staff" },
+    { value: "Sponsors", label: "Sponsors" },
+    { value: "Other", label: "Other" },
+];
+
 export default function NewContactPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -12,7 +25,7 @@ export default function NewContactPage() {
         name: "",
         email: "",
         phone: "",
-        tags: "",
+        group: "",
     });
 
     const handleChange = (e) => {
@@ -33,9 +46,8 @@ export default function NewContactPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...formData,
-                    tags: formData.tags
-                        ? formData.tags.split(",").map((t) => t.trim())
-                        : [],
+                    // Store group in tags array for database compatibility
+                    tags: formData.group ? [formData.group] : [],
                 }),
             });
 
@@ -120,18 +132,22 @@ export default function NewContactPage() {
 
                     <div className="form-control">
                         <label className="label">
-                            <span className="label-text font-medium">Tags</span>
+                            <span className="label-text font-medium">Group</span>
                         </label>
-                        <input
-                            type="text"
-                            name="tags"
-                            value={formData.tags}
+                        <select
+                            name="group"
+                            value={formData.group}
                             onChange={handleChange}
-                            placeholder="Parent, Volunteer, Donor"
-                            className="input input-bordered w-full"
-                        />
+                            className="select select-bordered w-full"
+                        >
+                            {CONTACT_GROUPS.map((group) => (
+                                <option key={group.value} value={group.value}>
+                                    {group.label}
+                                </option>
+                            ))}
+                        </select>
                         <label className="label">
-                            <span className="label-text-alt">Separate multiple tags with commas</span>
+                            <span className="label-text-alt">Categorize contacts for targeted email campaigns</span>
                         </label>
                     </div>
                 </div>

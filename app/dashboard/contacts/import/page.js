@@ -139,7 +139,7 @@ export default function ImportContactsPage() {
               <li><code>Name</code> or <code>First Name</code> + <code>Last Name</code></li>
               <li><code>Email</code> (required)</li>
               <li><code>Phone</code> (optional)</li>
-              <li><code>Tags</code> (optional, comma-separated)</li>
+              <li><code>Group</code> (optional) - Parents, Volunteers, Donors, Board Members, Alumni, Staff, Sponsors, Other</li>
             </ul>
           </div>
         </div>
