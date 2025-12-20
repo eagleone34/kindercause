@@ -10,6 +10,8 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    console.log("Fetching contacts for user:", session.user.id);
+
     const supabase = createAdminSupabaseClient();
 
     // Get the user's organization
@@ -19,19 +21,21 @@ export async function GET() {
       .eq("user_id", session.user.id)
       .single();
 
+    console.log("Organization query result:", { org, orgError });
+
     if (orgError) {
       console.error("Error fetching organization:", orgError);
-      // If no org found, return empty contacts
-      if (orgError.code === "PGRST116") {
-        return NextResponse.json({ contacts: [] });
-      }
-    }
-
-    if (!org) {
       return NextResponse.json({ contacts: [] });
     }
 
-    // Get contacts (excluding unsubscribed if column exists)
+    if (!org || !org.id) {
+      console.log("No organization or org.id found for user:", session.user.id);
+      return NextResponse.json({ contacts: [] });
+    }
+
+    console.log("Fetching contacts for org:", org.id);
+
+    // Get contacts
     const { data: contacts, error } = await supabase
       .from("contacts")
       .select("*")
@@ -43,9 +47,10 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Filter out unsubscribed contacts client-side if the field exists
+    // Filter out unsubscribed contacts if the field exists
     const activeContacts = contacts?.filter(c => c.unsubscribed !== true) || [];
 
+    console.log("Returning", activeContacts.length, "contacts");
     return NextResponse.json({ contacts: activeContacts });
   } catch (error) {
     console.error("Error in GET /api/contacts:", error);
