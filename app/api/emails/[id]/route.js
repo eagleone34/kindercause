@@ -1,23 +1,40 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/libs/next-auth";
-import { createClient } from "@/libs/supabase";
+import { auth } from "@/libs/auth";
+import { createAdminSupabaseClient } from "@/libs/supabase";
+
+// Helper function to get organization ID
+async function getOrganizationId(supabase, userId) {
+  const { data: org, error } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (error || !org) return null;
+  return org.id;
+}
 
 // GET /api/emails/[id] - Get a single email campaign
 export async function GET(req, { params }) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
-    const supabase = createClient();
-    
+    const supabase = createAdminSupabaseClient();
+
+    const organizationId = await getOrganizationId(supabase, session.user.id);
+    if (!organizationId) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+
     const { data: campaign, error } = await supabase
       .from("email_campaigns")
       .select("*")
       .eq("id", id)
-      .eq("organization_id", session.user.organizationId)
+      .eq("organization_id", organizationId)
       .single();
 
     if (error || !campaign) {
@@ -35,7 +52,7 @@ export async function GET(req, { params }) {
 export async function PUT(req, { params }) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -43,14 +60,19 @@ export async function PUT(req, { params }) {
     const body = await req.json();
     const { subject, body: emailBody, selectedTags } = body;
 
-    const supabase = createClient();
-    
+    const supabase = createAdminSupabaseClient();
+
+    const organizationId = await getOrganizationId(supabase, session.user.id);
+    if (!organizationId) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+
     // First check if campaign exists and is a draft
     const { data: existingCampaign, error: fetchError } = await supabase
       .from("email_campaigns")
       .select("*")
       .eq("id", id)
-      .eq("organization_id", session.user.organizationId)
+      .eq("organization_id", organizationId)
       .single();
 
     if (fetchError || !existingCampaign) {
@@ -90,18 +112,23 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
-    const supabase = createClient();
-    
+    const supabase = createAdminSupabaseClient();
+
+    const organizationId = await getOrganizationId(supabase, session.user.id);
+    if (!organizationId) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+
     const { error } = await supabase
       .from("email_campaigns")
       .delete()
       .eq("id", id)
-      .eq("organization_id", session.user.organizationId);
+      .eq("organization_id", organizationId);
 
     if (error) {
       console.error("Error deleting campaign:", error);

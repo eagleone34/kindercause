@@ -1,21 +1,32 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/libs/next-auth";
-import { createClient } from "@/libs/supabase";
+import { auth } from "@/libs/auth";
+import { createAdminSupabaseClient } from "@/libs/supabase";
 
 // GET /api/emails - List email campaigns
 export async function GET() {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = createClient();
-    
+    const supabase = createAdminSupabaseClient();
+
+    // Get the user's organization
+    const { data: org, error: orgError } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json({ campaigns: [] });
+    }
+
     const { data: campaigns, error } = await supabase
       .from("email_campaigns")
       .select("*")
-      .eq("organization_id", session.user.organizationId)
+      .eq("organization_id", org.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -34,7 +45,7 @@ export async function GET() {
 export async function POST(req) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -45,12 +56,23 @@ export async function POST(req) {
       return NextResponse.json({ error: "Subject is required" }, { status: 400 });
     }
 
-    const supabase = createClient();
-    
+    const supabase = createAdminSupabaseClient();
+
+    // Get the user's organization
+    const { data: org, error: orgError } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+
     const { data: campaign, error } = await supabase
       .from("email_campaigns")
       .insert({
-        organization_id: session.user.organizationId,
+        organization_id: org.id,
         subject,
         body: emailBody || "",
         filter_tags: selectedTags || [],

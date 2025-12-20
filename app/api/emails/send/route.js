@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/libs/next-auth";
-import { createClient } from "@/libs/supabase";
+import { auth } from "@/libs/auth";
+import { createAdminSupabaseClient } from "@/libs/supabase";
 
 // POST /api/emails/send - Send an email campaign
 export async function POST(req) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -17,8 +17,20 @@ export async function POST(req) {
       return NextResponse.json({ error: "Subject and message are required" }, { status: 400 });
     }
 
-    const supabase = createClient();
-    const organizationId = session.user.organizationId;
+    const supabase = createAdminSupabaseClient();
+
+    // Get the user's organization
+    const { data: org, error: orgError } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (orgError || !org) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+
+    const organizationId = org.id;
 
     // Get contacts based on tag filter
     let query = supabase
@@ -35,9 +47,9 @@ export async function POST(req) {
     }
 
     // Filter by tags if specified
-    let recipients = contacts;
+    let recipients = contacts || [];
     if (selectedTags && selectedTags.length > 0) {
-      recipients = contacts.filter(contact =>
+      recipients = recipients.filter(contact =>
         selectedTags.some(tag => contact.tags?.includes(tag))
       );
     }
