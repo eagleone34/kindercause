@@ -143,7 +143,7 @@ export default function ContactsPage() {
       </div>
 
       {/* Contacts Table */}
-      <div className="bg-base-100 rounded-box shadow overflow-x-auto">
+      <div className="bg-base-100 rounded-box shadow">
         {isLoading ? (
           <div className="p-12 text-center">
             <span className="loading loading-spinner loading-lg" />
@@ -213,13 +213,13 @@ export default function ContactsPage() {
                     )}
                   </td>
                   <td>
-                    <div className="dropdown dropdown-end">
+                    <div className="dropdown dropdown-end dropdown-left">
                       <div tabIndex={0} role="button" className="btn btn-ghost btn-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                         </svg>
                       </div>
-                      <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-40 z-50">
+                      <ul tabIndex={0} className="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-40 z-[100] border border-base-200">
                         <li>
                           <Link href={`/dashboard/contacts/${contact.id}`}>
                             Edit
