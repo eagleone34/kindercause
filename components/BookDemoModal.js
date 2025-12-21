@@ -29,7 +29,7 @@ export default function BookDemoModal({ isOpen, onClose }) {
                 {/* Iframe Content */}
                 <div className="flex-1 w-full bg-base-100 rounded-b-2xl overflow-hidden">
                     <iframe
-                        src="https://zcal.co/mazenashkar/30min?embed=1"
+                        src="https://zcal.co/i/yCQRF6b_?embed=1"
                         style={{ border: "none", width: "100%", height: "100%" }}
                         title="Book a Demo"
                     />
