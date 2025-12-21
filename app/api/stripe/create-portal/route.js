@@ -28,6 +28,7 @@ export async function POST(req) {
           { status: 400 }
         );
       } else if (!body.returnUrl) {
+        console.log("Missing returnUrl in body:", body);
         return NextResponse.json(
           { error: "Return URL is required" },
           { status: 400 }
@@ -36,7 +37,7 @@ export async function POST(req) {
 
       const stripePortalUrl = await createCustomerPortal({
         customerId: org.stripe_customer_id,
-        returnUrl: body.returnUrl,
+        returnUrl: (() => { console.log("Using Return URL:", body.returnUrl); return body.returnUrl; })(),
       });
 
       return NextResponse.json({

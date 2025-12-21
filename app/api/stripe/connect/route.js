@@ -54,6 +54,11 @@ export async function POST(req) {
                 .eq("id", org.id);
         }
 
+        if (!process.env.NEXT_PUBLIC_APP_URL) {
+            console.error("Missing NEXT_PUBLIC_APP_URL environment variable");
+            return NextResponse.json({ error: "Server configuration error: Missing App URL" }, { status: 500 });
+        }
+
         // 2. Create Account Link for onboarding
         const accountLink = await stripe.accountLinks.create({
             account: accountId,
@@ -65,6 +70,6 @@ export async function POST(req) {
         return NextResponse.json({ url: accountLink.url });
     } catch (error) {
         console.error("Error creating Connect account:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error.message || "Failed to create connection" }, { status: 500 });
     }
 }
