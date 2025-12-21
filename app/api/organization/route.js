@@ -71,6 +71,7 @@ export async function PUT(req) {
                 city: city || null,
                 state: state || null,
                 zip: zip || null,
+                fund_categories: body.fund_categories || undefined,
             })
             .eq("id", existingOrg.id)
             .select()

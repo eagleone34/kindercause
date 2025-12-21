@@ -12,6 +12,23 @@ function replaceVariables(text, recipient, organization, fundraiser) {
   result = result.replace(/\{\{first_name\}\}/g, recipient.first_name || "");
   result = result.replace(/\{\{last_name\}\}/g, recipient.last_name || "");
 
+  // Child variables
+  if (recipient.children && Array.isArray(recipient.children) && recipient.children.length > 0) {
+    const validChildren = recipient.children.filter(c => c.name);
+    if (validChildren.length > 0) {
+      const names = validChildren.map(c => c.name).join(" and ");
+      result = result.replace(/\{\{child_names\}\}/g, names);
+      result = result.replace(/\{\{child_first_name\}\}/g, validChildren[0].name);
+    } else {
+      result = result.replace(/\{\{child_names\}\}/g, "your child");
+      result = result.replace(/\{\{child_first_name\}\}/g, "your child");
+    }
+  } else {
+    // Fallback if no children data
+    result = result.replace(/\{\{child_names\}\}/g, "your child");
+    result = result.replace(/\{\{child_first_name\}\}/g, "your child");
+  }
+
   // Organization variables
   if (organization) {
     result = result.replace(/\{\{organization_name\}\}/g, organization.name || "");
@@ -38,6 +55,23 @@ function replaceVariables(text, recipient, organization, fundraiser) {
     );
     result = result.replace(/\{\{event_location\}\}/g, fundraiser.location || "");
     result = result.replace(/\{\{ticket_price\}\}/g, fundraiser.ticket_price?.toString() || "");
+
+    // Fund allocation visualization
+    if (text.includes("{{fund_allocation}}")) {
+      let allocationText = "";
+      if (fundraiser.fund_allocation && fundraiser.fund_allocation.length > 0) {
+        allocationText = fundraiser.fund_allocation.map(item => {
+          const bars = Math.round((item.percentage || 0) / 5); // 20 bars = 100%
+          const progressBar = "█".repeat(bars) + "░".repeat(20 - bars);
+          return `${item.category}: ${item.percentage}%\n${progressBar}`;
+        }).join("\n\n");
+      } else {
+        // Default to General Fund 100%
+        const progressBar = "█".repeat(20);
+        allocationText = `General Fund: 100%\n${progressBar}`;
+      }
+      result = result.replace(/\{\{fund_allocation\}\}/g, allocationText);
+    }
 
     const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.kindercause.com"}/${organization?.slug || ""}/${fundraiser.slug || ""}`;
     result = result.replace(/\{\{purchase_link\}\}/g, publicUrl);
@@ -92,7 +126,7 @@ export async function POST(req) {
     // Get contacts based on tag filter
     let query = supabase
       .from("contacts")
-      .select("id, email, first_name, last_name, tags")
+      .select("id, email, first_name, last_name, tags, children")
       .eq("organization_id", organizationId)
       .not("email", "is", null);
 

@@ -144,6 +144,8 @@ export default function NewEmailCampaignPage() {
     // For preview, show first_name as example
     if (forPreview) {
       result = result.replace(/\{\{first_name\}\}/g, "Sarah");
+      result = result.replace(/\{\{child_names\}\}/g, "Emma and Liam");
+      result = result.replace(/\{\{child_first_name\}\}/g, "Emma");
     }
 
     // Fundraiser/Event variables
@@ -166,9 +168,12 @@ export default function NewEmailCampaignPage() {
         }) : ""
       );
       result = result.replace(/\{\{event_location\}\}/g, fundraiser.location || "TBD");
-      result = result.replace(/\{\{ticket_price\}\}/g, fundraiser.ticket_price || "");
+      result = result.replace(/\{\{ticket_price\}\}/g, "50");
 
-      const publicUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/${fundraiser.organization?.slug}/${fundraiser.slug}`;
+      const exampleAllocation = `Karate Class: 40%\n████████░░░░░░░░░░░░\n\nDance Class: 60%\n████████████░░░░░░░░`;
+      result = result.replace(/\{\{fund_allocation\}\}/g, exampleAllocation);
+
+      const publicUrl = `https://www.kindercause.com/sunshine-daycare/spring-gala-2024`;
       result = result.replace(/\{\{purchase_link\}\}/g, publicUrl);
       result = result.replace(/\{\{donate_link\}\}/g, publicUrl);
     }
@@ -359,8 +364,8 @@ export default function NewEmailCampaignPage() {
                             selectTemplate(template);
                           }}
                           className={`flex flex-col items-start p-4 border rounded-lg transition-colors text-left ${isDisabled
-                              ? "border-base-200 opacity-50 cursor-not-allowed bg-base-200/50"
-                              : "border-base-300 hover:border-primary hover:bg-primary/5"
+                            ? "border-base-200 opacity-50 cursor-not-allowed bg-base-200/50"
+                            : "border-base-300 hover:border-primary hover:bg-primary/5"
                             }`}
                         >
                           <span className="text-2xl mb-2">{template.emoji}</span>

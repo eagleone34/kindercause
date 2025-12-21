@@ -67,7 +67,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { first_name, last_name, name, email, phone, tags } = body;
+    const { first_name, last_name, name, email, phone, tags, children } = body;
 
     // Support both name (combined) and first_name/last_name (separate)
     let firstName = first_name;
@@ -112,7 +112,7 @@ export async function POST(req) {
       org = newOrg;
     }
 
-    // Create contact
+    // Create contact with children
     const { data: contact, error } = await supabase
       .from("contacts")
       .insert({
@@ -122,6 +122,7 @@ export async function POST(req) {
         email: email.toLowerCase().trim(),
         phone: phone || null,
         tags: tags || [],
+        children: children || [],
       })
       .select()
       .single();

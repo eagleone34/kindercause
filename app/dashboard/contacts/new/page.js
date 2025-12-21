@@ -1,39 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
-// Predefined contact groups for categorization
-const CONTACT_GROUPS = [
-    { value: "", label: "Select a group..." },
-    { value: "Parents", label: "Parents" },
-    { value: "Volunteers", label: "Volunteers" },
-    { value: "Donors", label: "Donors" },
-    { value: "Board Members", label: "Board Members" },
-    { value: "Alumni", label: "Alumni" },
-    { value: "Staff", label: "Staff" },
-    { value: "Sponsors", label: "Sponsors" },
-    { value: "Other", label: "Other" },
-];
-
 export default function NewContactPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [groups, setGroups] = useState([]);
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
         email: "",
         phone: "",
         group: "",
+        children: [], // Array of { name, birthdate, class }
     });
+
+    useEffect(() => {
+        fetchGroups();
+    }, []);
+
+    const fetchGroups = async () => {
+        try {
+            const res = await fetch("/api/groups");
+            const data = await res.json();
+            if (data.groups) setGroups(data.groups);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
             [name]: value,
+        }));
+    };
+
+    // Children handlers
+    const addChild = () => {
+        setFormData((prev) => ({
+            ...prev,
+            children: [...prev.children, { name: "", birthdate: "", class: "" }],
+        }));
+    };
+
+    const updateChild = (index, field, value) => {
+        setFormData((prev) => ({
+            ...prev,
+            children: prev.children.map((child, i) =>
+                i === index ? { ...child, [field]: value } : child
+            ),
+        }));
+    };
+
+    const removeChild = (index) => {
+        setFormData((prev) => ({
+            ...prev,
+            children: prev.children.filter((_, i) => i !== index),
         }));
     };
 
@@ -51,6 +78,7 @@ export default function NewContactPage() {
                     email: formData.email,
                     phone: formData.phone,
                     tags: formData.group ? [formData.group] : [],
+                    children: formData.children.filter(c => c.name), // Only save children with names
                 }),
             });
 
@@ -88,7 +116,10 @@ export default function NewContactPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Contact Info */}
                 <div className="bg-base-100 rounded-box shadow p-6 space-y-4">
+                    <h2 className="font-semibold">Contact Information</h2>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="form-control">
                             <label className="label">
@@ -158,9 +189,10 @@ export default function NewContactPage() {
                             onChange={handleChange}
                             className="select select-bordered w-full"
                         >
-                            {CONTACT_GROUPS.map((group) => (
-                                <option key={group.value} value={group.value}>
-                                    {group.label}
+                            <option value="">Select a group...</option>
+                            {groups.map((group) => (
+                                <option key={group} value={group}>
+                                    {group}
                                 </option>
                             ))}
                         </select>
@@ -168,6 +200,91 @@ export default function NewContactPage() {
                             <span className="label-text-alt">Categorize contacts for targeted email campaigns</span>
                         </label>
                     </div>
+                </div>
+
+                {/* Children Section */}
+                <div className="bg-base-100 rounded-box shadow p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="font-semibold">👶 Children</h2>
+                            <p className="text-sm text-base-content/60">Add children for personalized communications</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={addChild}
+                        >
+                            + Add Child
+                        </button>
+                    </div>
+
+                    {formData.children.length === 0 ? (
+                        <div className="text-center py-6 text-base-content/50">
+                            <span className="text-4xl block mb-2">👶</span>
+                            <p>No children added yet</p>
+                            <button
+                                type="button"
+                                className="btn btn-ghost btn-sm mt-2"
+                                onClick={addChild}
+                            >
+                                + Add a child
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {formData.children.map((child, index) => (
+                                <div key={index} className="border border-base-300 rounded-lg p-4 bg-base-50">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="font-medium text-sm">Child {index + 1}</span>
+                                        <button
+                                            type="button"
+                                            className="btn btn-ghost btn-xs text-error"
+                                            onClick={() => removeChild(index)}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div className="form-control">
+                                            <label className="label py-1">
+                                                <span className="label-text text-xs">Name</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={child.name}
+                                                onChange={(e) => updateChild(index, "name", e.target.value)}
+                                                placeholder="Emma"
+                                                className="input input-bordered input-sm w-full"
+                                            />
+                                        </div>
+                                        <div className="form-control">
+                                            <label className="label py-1">
+                                                <span className="label-text text-xs">Birthdate</span>
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={child.birthdate}
+                                                onChange={(e) => updateChild(index, "birthdate", e.target.value)}
+                                                className="input input-bordered input-sm w-full"
+                                            />
+                                        </div>
+                                        <div className="form-control">
+                                            <label className="label py-1">
+                                                <span className="label-text text-xs">Class/Room</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={child.class}
+                                                onChange={(e) => updateChild(index, "class", e.target.value)}
+                                                placeholder="Butterfly Room"
+                                                className="input input-bordered input-sm w-full"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Submit */}

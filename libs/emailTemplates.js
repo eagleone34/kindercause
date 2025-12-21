@@ -84,11 +84,14 @@ export const SMART_VARIABLES = [
     // Always available
     { variable: "{{first_name}}", description: "Recipient's first name", example: "Sarah", requiresEvent: false },
     { variable: "{{organization_name}}", description: "Your organization name", example: "Sunshine Daycare", requiresEvent: false },
+    { variable: "{{child_names}}", description: "Names of recipient's children", example: "Emma and Liam", requiresEvent: false },
+    { variable: "{{child_first_name}}", description: "Name of first child", example: "Emma", requiresEvent: false },
     // Requires event selection
     { variable: "{{event_name}}", description: "Event or campaign name", example: "Spring Gala 2024", requiresEvent: true },
     { variable: "{{event_start_date}}", description: "Event start date", example: "March 15, 2024", requiresEvent: true },
     { variable: "{{event_end_date}}", description: "Event end date", example: "March 16, 2024", requiresEvent: true },
     { variable: "{{event_location}}", description: "Event location", example: "Community Center", requiresEvent: true },
+    { variable: "{{fund_allocation}}", description: "Visual breakdown of fund usage", example: "Karate Class: 40% [####..]", requiresEvent: true },
     { variable: "{{ticket_price}}", description: "Ticket price", example: "25", requiresEvent: true },
     { variable: "{{purchase_link}}", description: "Link to purchase tickets", example: "https://...", requiresEvent: true },
     { variable: "{{donate_link}}", description: "Link to donate", example: "https://...", requiresEvent: true },

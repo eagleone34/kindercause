@@ -17,6 +17,7 @@ export default function EditContactPage() {
         email: "",
         phone: "",
         group: "",
+        children: [], // Array of { name, birthdate, class }
     });
 
     useEffect(() => {
@@ -54,6 +55,7 @@ export default function EditContactPage() {
                 email: data.email || "",
                 phone: data.phone || "",
                 group: data.tags?.[0] || "",
+                children: data.children || [],
             });
         } catch (error) {
             console.error(error);
@@ -71,6 +73,30 @@ export default function EditContactPage() {
         }));
     };
 
+    // Children handlers
+    const addChild = () => {
+        setFormData((prev) => ({
+            ...prev,
+            children: [...prev.children, { name: "", birthdate: "", class: "" }],
+        }));
+    };
+
+    const updateChild = (index, field, value) => {
+        setFormData((prev) => ({
+            ...prev,
+            children: prev.children.map((child, i) =>
+                i === index ? { ...child, [field]: value } : child
+            ),
+        }));
+    };
+
+    const removeChild = (index) => {
+        setFormData((prev) => ({
+            ...prev,
+            children: prev.children.filter((_, i) => i !== index),
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSaving(true);
@@ -85,6 +111,7 @@ export default function EditContactPage() {
                     email: formData.email,
                     phone: formData.phone,
                     tags: formData.group ? [formData.group] : [],
+                    children: formData.children.filter(c => c.name), // Only save children with names
                 }),
             });
 
@@ -130,7 +157,9 @@ export default function EditContactPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Contact Info */}
                 <div className="bg-base-100 rounded-box shadow p-6 space-y-4">
+                    <h2 className="font-semibold">Contact Information</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="form-control">
                             <label className="label">
@@ -211,6 +240,91 @@ export default function EditContactPage() {
                             <span className="label-text-alt">Categorize contacts for targeted email campaigns</span>
                         </label>
                     </div>
+                </div>
+
+                {/* Children Section */}
+                <div className="bg-base-100 rounded-box shadow p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="font-semibold">👶 Children</h2>
+                            <p className="text-sm text-base-content/60">Manage children details</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={addChild}
+                        >
+                            + Add Child
+                        </button>
+                    </div>
+
+                    {formData.children.length === 0 ? (
+                        <div className="text-center py-6 text-base-content/50">
+                            <span className="text-4xl block mb-2">👶</span>
+                            <p>No children added yet</p>
+                            <button
+                                type="button"
+                                className="btn btn-ghost btn-sm mt-2"
+                                onClick={addChild}
+                            >
+                                + Add a child
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {formData.children.map((child, index) => (
+                                <div key={index} className="border border-base-300 rounded-lg p-4 bg-base-50">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="font-medium text-sm">Child {index + 1}</span>
+                                        <button
+                                            type="button"
+                                            className="btn btn-ghost btn-xs text-error"
+                                            onClick={() => removeChild(index)}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div className="form-control">
+                                            <label className="label py-1">
+                                                <span className="label-text text-xs">Name</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={child.name}
+                                                onChange={(e) => updateChild(index, "name", e.target.value)}
+                                                placeholder="Emma"
+                                                className="input input-bordered input-sm w-full"
+                                            />
+                                        </div>
+                                        <div className="form-control">
+                                            <label className="label py-1">
+                                                <span className="label-text text-xs">Birthdate</span>
+                                            </label>
+                                            <input
+                                                type="date"
+                                                value={child.birthdate}
+                                                onChange={(e) => updateChild(index, "birthdate", e.target.value)}
+                                                className="input input-bordered input-sm w-full"
+                                            />
+                                        </div>
+                                        <div className="form-control">
+                                            <label className="label py-1">
+                                                <span className="label-text text-xs">Class/Room</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={child.class}
+                                                onChange={(e) => updateChild(index, "class", e.target.value)}
+                                                placeholder="Butterfly Room"
+                                                className="input input-bordered input-sm w-full"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Submit */}

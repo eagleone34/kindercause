@@ -75,6 +75,7 @@ export async function PUT(req, { params }) {
                 email: body.email?.toLowerCase().trim(),
                 phone: body.phone || null,
                 tags: body.tags || [],
+                children: body.children || [],
             })
             .eq("id", id)
             .eq("organization_id", org.id)

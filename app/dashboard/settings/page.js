@@ -41,6 +41,7 @@ export default function SettingsPage() {
                     city: data.city || "",
                     state: data.state || "",
                     zip: data.zip || "",
+                    fund_categories: data.fund_categories && data.fund_categories.length > 0 ? data.fund_categories : ["General Fund"],
                 });
             }
         } catch (error) {
@@ -152,6 +153,14 @@ export default function SettingsPage() {
         } catch (e) {
             // apiClient already shows toast errors automatically
             console.error(e);
+
+            // If user has no billing account (no execution of checkout yet), redirect to pricing
+            if (e.message?.includes("You don't have a billing account yet")) {
+                toast("Redirecting to subscription plans...", { icon: "💳" });
+                setTimeout(() => {
+                    window.location.href = "/#pricing";
+                }, 1500);
+            }
         }
     };
 
@@ -347,6 +356,86 @@ export default function SettingsPage() {
                                 className="btn btn-primary"
                             >
                                 Add Group
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Fund Categories */}
+                <div className="bg-base-100 p-8 rounded-xl shadow-sm border border-base-200">
+                    <h2 className="text-xl font-bold mb-6">Fund Allocation Categories</h2>
+                    <p className="text-base-content/60 mb-4">
+                        Define categories to allocate proceeds from your events (e.g., General Fund, Karate Class, Dance Class).
+                    </p>
+
+                    <div className="mb-6">
+                        <h3 className="font-medium mb-3">Your Categories</h3>
+                        {(!formData.fund_categories || formData.fund_categories.length === 0) ? (
+                            <p className="text-base-content/50 text-sm">No categories defined yet. Add one below!</p>
+                        ) : (
+                            <div className="flex flex-wrap gap-2">
+                                {formData.fund_categories.map((category, index) => (
+                                    <span key={index} className="badge badge-lg gap-1 badge-outline">
+                                        {category}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newCategories = formData.fund_categories.filter((_, i) => i !== index);
+                                                setFormData(prev => ({ ...prev, fund_categories: newCategories }));
+                                            }}
+                                            className="hover:text-error"
+                                            title="Delete category"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="form-control">
+                        <label className="label">
+                            <span className="label-text font-medium">Add New Category</span>
+                        </label>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                id="newCategoryInput"
+                                placeholder="Enter category name..."
+                                className="input input-bordered flex-1"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        const val = e.target.value.trim();
+                                        if (val) {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                fund_categories: [...(prev.fund_categories || []), val]
+                                            }));
+                                            e.target.value = "";
+                                        }
+                                    }
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const input = document.getElementById("newCategoryInput");
+                                    const val = input.value.trim();
+                                    if (val) {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            fund_categories: [...(prev.fund_categories || []), val]
+                                        }));
+                                        input.value = "";
+                                    }
+                                }}
+                                className="btn btn-primary"
+                            >
+                                Add Category
                             </button>
                         </div>
                     </div>

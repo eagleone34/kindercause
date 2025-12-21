@@ -10,6 +10,7 @@ export default function EditFundraiserPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [fundCategories, setFundCategories] = useState(["General Fund"]);
     const [formData, setFormData] = useState({
         name: "",
         type: "event",
@@ -23,11 +24,27 @@ export default function EditFundraiserPage() {
         allow_recurring: false,
         show_donor_wall: false,
         send_tax_receipts: false,
+        fund_allocation: [], // Array of { category: "Karate", percentage: 40 }
     });
 
     useEffect(() => {
+        fetchOrgCategories();
         fetchFundraiser();
     }, [params.id]);
+
+    const fetchOrgCategories = async () => {
+        try {
+            const res = await fetch("/api/organization");
+            if (res.ok) {
+                const data = await res.json();
+                if (data.fund_categories && data.fund_categories.length > 0) {
+                    setFundCategories(data.fund_categories);
+                }
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     const fetchFundraiser = async () => {
         try {
@@ -51,6 +68,7 @@ export default function EditFundraiserPage() {
                 allow_recurring: data.allow_recurring || false,
                 show_donor_wall: data.show_donor_wall || false,
                 send_tax_receipts: data.send_tax_receipts || false,
+                fund_allocation: data.fund_allocation || [],
             });
         } catch (error) {
             console.error(error);
@@ -68,6 +86,34 @@ export default function EditFundraiserPage() {
         }));
     };
 
+    // Allocation Handlers
+    const addAllocation = () => {
+        setFormData(prev => ({
+            ...prev,
+            fund_allocation: [...(prev.fund_allocation || []), { category: fundCategories[0], percentage: 0 }]
+        }));
+    };
+
+    const updateAllocation = (index, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            fund_allocation: prev.fund_allocation.map((item, i) =>
+                i === index ? { ...item, [field]: field === "percentage" ? parseInt(value) || 0 : value } : item
+            )
+        }));
+    };
+
+    const removeAllocation = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            fund_allocation: prev.fund_allocation.filter((_, i) => i !== index)
+        }));
+    };
+
+    const getTotalAllocation = () => {
+        return (formData.fund_allocation || []).reduce((sum, item) => sum + (item.percentage || 0), 0);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -75,6 +121,15 @@ export default function EditFundraiserPage() {
         if (formData.end_date && formData.start_date && formData.end_date < formData.start_date) {
             toast.error("End date cannot be before start date");
             return;
+        }
+
+        // Validate allocation if present
+        if (formData.fund_allocation && formData.fund_allocation.length > 0) {
+            const total = getTotalAllocation();
+            if (total !== 100) {
+                toast.error(`Fund allocation must sum to 100%. Current total: ${total}%`);
+                return;
+            }
         }
 
         setIsSaving(true);
@@ -193,6 +248,67 @@ export default function EditFundraiserPage() {
                     </div>
                 </div>
 
+                {/* Fund Allocation */}
+                <div className="bg-base-100 rounded-box shadow p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="font-semibold">Fund Allocation</h2>
+                            <p className="text-sm text-base-content/60">Where will the funds go?</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-outline"
+                            onClick={addAllocation}
+                        >
+                            + Add Category
+                        </button>
+                    </div>
+
+                    {(formData.fund_allocation || []).length === 0 ? (
+                        <p className="text-sm text-base-content/50 italic">
+                            No specific allocation set (100% to General Fund by default if left empty).
+                        </p>
+                    ) : (
+                        <div className="space-y-3">
+                            {formData.fund_allocation.map((item, index) => (
+                                <div key={index} className="flex gap-2 items-center">
+                                    <select
+                                        className="select select-bordered select-sm flex-1"
+                                        value={item.category}
+                                        onChange={(e) => updateAllocation(index, "category", e.target.value)}
+                                    >
+                                        {fundCategories.map((cat) => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="number"
+                                        className="input input-bordered input-sm w-20"
+                                        value={item.percentage}
+                                        onChange={(e) => updateAllocation(index, "percentage", e.target.value)}
+                                        min="1"
+                                        max="100"
+                                        placeholder="%"
+                                    />
+                                    <span className="text-sm font-medium">%</span>
+                                    <button
+                                        type="button"
+                                        className="btn btn-ghost btn-xs text-error"
+                                        onClick={() => removeAllocation(index)}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+                            <div className="flex justify-end pt-2 border-t mt-2">
+                                <span className={`text-sm font-bold ${getTotalAllocation() === 100 ? 'text-success' : 'text-error'}`}>
+                                    Total: {getTotalAllocation()}%
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 {/* Event-specific fields */}
                 {isEvent && (
                     <div className="bg-base-100 rounded-box shadow p-6">
@@ -248,6 +364,7 @@ export default function EditFundraiserPage() {
                                     onChange={handleChange}
                                     placeholder="Community Center, 123 Main St"
                                     className="input input-bordered w-full"
+                                    maxLength={35}
                                 />
                             </div>
                         </div>
