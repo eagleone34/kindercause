@@ -15,11 +15,11 @@ export async function POST(req) {
       const supabase = createClient();
       const { data: org } = await supabase
         .from("organizations")
-        .select("stripe_account_id")
+        .select("stripe_customer_id")
         .eq("user_id", id)
         .single();
 
-      if (!org?.stripe_account_id) {
+      if (!org?.stripe_customer_id) {
         return NextResponse.json(
           {
             error:
@@ -35,7 +35,7 @@ export async function POST(req) {
       }
 
       const stripePortalUrl = await createCustomerPortal({
-        customerId: org.stripe_account_id,
+        customerId: org.stripe_customer_id,
         returnUrl: body.returnUrl,
       });
 
