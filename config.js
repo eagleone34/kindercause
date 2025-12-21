@@ -24,9 +24,9 @@ const config = {
         // A friendly description of the plan, displayed on the pricing page. Tip: explain why this plan and not others
         description: "Perfect for small daycares running 2-4 fundraisers/year",
         // The price you want to display, the one user will be charged on Stripe.
-        price: 49,
+        price: 9,
         // If you have an anchor price (i.e. $29) that you want to display crossed out, put it here. Otherwise, leave it empty
-        priceAnchor: 79,
+        priceAnchor: null,
         features: [
           { name: "Unlimited events & campaigns" },
           { name: "Contact management" },
@@ -42,8 +42,8 @@ const config = {
           process.env.STRIPE_GROWTH_PRICE_ID || "price_growth_placeholder",
         name: "Growth",
         description: "For growing daycares with more frequent fundraising",
-        price: 99,
-        priceAnchor: 149,
+        price: 19,
+        priceAnchor: null,
         features: [
           { name: "Everything in Starter" },
           { name: "Volunteer shift management" },

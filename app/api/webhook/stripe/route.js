@@ -94,6 +94,8 @@ export async function POST(req) {
       case "customer.subscription.updated": {
         // Subscription changed (upgrade/downgrade/cancel pending)
         logToFile("Subscription updated");
+        const subscription = data.object;
+        await handleSubscriptionUpdated(subscription, supabase);
         break;
       }
 
@@ -430,6 +432,33 @@ async function handleSubscriptionCanceled(subscription, supabase) {
 
   logToFile(`❌ Subscription canceled for customer ${customerId}`);
   console.log(`❌ Subscription canceled for customer ${customerId}`);
+
+  // Retrieve user to send email
+  try {
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("user_id, name")
+      .eq("stripe_customer_id", customerId)
+      .single();
+
+    if (org?.user_id) {
+      const { data: user } = await supabase.auth.admin.getUserById(org.user_id);
+
+      if (user?.user?.email) {
+        const { sendEmail } = await import("@/libs/resend");
+        await sendEmail({
+          to: user.user.email,
+          subject: "Subscription Cancelled - KinderCause",
+          text: `Hi,\n\nYour subscription for ${org.name} has been cancelled. We're sorry to see you go!\n\nIf this was a mistake, you can reactivate your subscription from your dashboard settings.\n\nBest,\nThe KinderCause Team`,
+          html: `<p>Hi,</p><p>Your subscription for <strong>${org.name}</strong> has been cancelled. We're sorry to see you go!</p><p>If this was a mistake, you can reactivate your subscription from your dashboard settings.</p><p>Best,<br>The KinderCause Team</p>`
+        });
+        logToFile(`📧 Cancellation email sent to ${user.user.email}`);
+      }
+    }
+  } catch (err) {
+    logToFile(`⚠️ Failed to send cancellation email: ${err.message}`);
+    console.error(err);
+  }
 }
 
 // Handle recurring invoice payments
@@ -471,5 +500,33 @@ async function handleRefund(charge, supabase) {
   }
 
   logToFile(`💰 Refund processed for payment ${paymentIntentId}`);
+  logToFile(`💰 Refund processed for payment ${paymentIntentId}`);
   console.log(`💰 Refund processed for payment ${paymentIntentId}`);
+}
+
+// Handle subscription updates (cancellations at period end, renewals, etc.)
+async function handleSubscriptionUpdated(subscription, supabase) {
+  const customerId = subscription.customer;
+  const status = subscription.status;
+  const priceId = subscription.items.data[0]?.price?.id;
+
+  // Find plan name
+  const plan = configFile.stripe.plans.find((p) => p.priceId === priceId);
+
+  const { error } = await supabase
+    .from("organizations")
+    .update({
+      subscription_status: status,
+      price_id: priceId,
+      plan_name: plan?.name || 'Unknown Plan',
+    })
+    .eq("stripe_customer_id", customerId);
+
+  if (error) {
+    logToFile(`Error updating subscription status: ${error.message}`);
+    console.error("Error updating subscription status:", error);
+  } else {
+    logToFile(`✅ Subscription updated for customer ${customerId}: ${status}`);
+    console.log(`✅ Subscription updated for customer ${customerId}: ${status}`);
+  }
 }

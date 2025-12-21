@@ -449,9 +449,30 @@ export default function SettingsPage() {
                         <div className="flex items-center justify-between p-4 bg-base-200 rounded-lg">
                             <div>
                                 <p className="font-medium">Current Plan</p>
-                                <p className="text-base-content/60">Pro Plan - $29/month</p>
+                                <p className="text-base-content/60">
+                                    {organization?.plan_name ? (
+                                        <>
+                                            {organization.plan_name} - {organization.plan_name === "Growth" ? "$19" : "$9"}/month
+                                        </>
+                                    ) : (
+                                        "No Active Plan"
+                                    )}
+                                </p>
                             </div>
-                            <span className="badge badge-success">Active</span>
+                            <span
+                                className={`badge ${organization?.subscription_status === 'active'
+                                        ? 'badge-success'
+                                        : organization?.subscription_status === 'past_due'
+                                            ? 'badge-warning'
+                                            : 'badge-neutral'
+                                    }`}
+                            >
+                                {organization?.subscription_status ? (
+                                    organization.subscription_status.charAt(0).toUpperCase() + organization.subscription_status.slice(1)
+                                ) : (
+                                    "Inactive"
+                                )}
+                            </span>
                         </div>
 
                         <p className="text-sm text-base-content/60">
