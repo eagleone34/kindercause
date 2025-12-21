@@ -28,6 +28,7 @@ const config = {
         // If you have an anchor price (i.e. $29) that you want to display crossed out, put it here. Otherwise, leave it empty
         priceAnchor: null,
         features: [
+          { name: "7-day free trial" },
           { name: "Unlimited events & campaigns" },
           { name: "Contact management" },
           { name: "Email notifications" },
@@ -45,6 +46,7 @@ const config = {
         price: 19,
         priceAnchor: null,
         features: [
+          { name: "7-day free trial" },
           { name: "Everything in Starter" },
           { name: "Volunteer shift management" },
           { name: "Analytics dashboard" },

@@ -441,6 +441,66 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
+                {/* Payouts & Banking */}
+                <div className="bg-base-100 p-8 rounded-xl shadow-sm border border-base-200">
+                    <h2 className="text-xl font-bold mb-6">Payouts & Banking</h2>
+                    <p className="text-base-content/60 mb-6">
+                        Connect your bank account to receive payouts from your fundraisers.
+                    </p>
+
+                    <div className="flex items-center gap-4">
+                        {organization?.stripe_account_id ? (
+                            <div className="w-full">
+                                <div className="alert alert-success mb-4 text-white">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span>Your bank account is connected.</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        try {
+                                            const res = await fetch("/api/stripe/dashboard", { method: "POST" });
+                                            const data = await res.json();
+                                            if (data.url) window.location.href = data.url;
+                                            else toast.error("Failed to load dashboard");
+                                        } catch (e) { toast.error("Error loading dashboard"); }
+                                    }}
+                                    className="btn btn-primary"
+                                >
+                                    View Payout Dashboard
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 ml-2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ) : (
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        toast("Connecting to Stripe...", { icon: "🏦" });
+                                        try {
+                                            const res = await fetch("/api/stripe/connect", { method: "POST" });
+                                            const data = await res.json();
+                                            if (data.url) window.location.href = data.url;
+                                            else toast.error("Failed to start connection");
+                                        } catch (e) { toast.error("Error connecting"); }
+                                    }}
+                                    className="btn btn-primary"
+                                >
+                                    Connect Bank Account
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 ml-2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+                                    </svg>
+                                </button>
+                                <p className="text-xs text-base-content/50 mt-2">
+                                    Secure payments powered by Stripe
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Subscription */}
                 <div className="bg-base-100 p-8 rounded-xl shadow-sm border border-base-200">
                     <h2 className="text-xl font-bold mb-6">Subscription & Billing</h2>
@@ -461,10 +521,10 @@ export default function SettingsPage() {
                             </div>
                             <span
                                 className={`badge ${organization?.subscription_status === 'active'
-                                        ? 'badge-success'
-                                        : organization?.subscription_status === 'past_due'
-                                            ? 'badge-warning'
-                                            : 'badge-neutral'
+                                    ? 'badge-success'
+                                    : organization?.subscription_status === 'past_due'
+                                        ? 'badge-warning'
+                                        : 'badge-neutral'
                                     }`}
                             >
                                 {organization?.subscription_status ? (
