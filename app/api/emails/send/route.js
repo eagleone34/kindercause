@@ -54,7 +54,7 @@ function replaceVariables(text, recipient, organization, fundraiser) {
       }) : ""
     );
     result = result.replace(/\{\{event_location\}\}/g, fundraiser.location || "");
-    result = result.replace(/\{\{ticket_price\}\}/g, fundraiser.ticket_price?.toString() || "");
+    result = result.replace(/\{\{ticket_price\}\}/g, fundraiser.ticket_price?.toString() || "0");
 
     // Fund allocation visualization
     if (text.includes("{{fund_allocation}}")) {

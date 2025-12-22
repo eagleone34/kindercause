@@ -40,7 +40,7 @@ export const EMAIL_TEMPLATES = [
         emoji: "💝",
         description: "Ask for support for your campaign",
         subject: "Help Us Reach Our Goal: {{event_name}}",
-        body: "Hi {{first_name}},\n\nWe're reaching out to ask for your support with {{event_name}}.\n\nEvery donation, no matter the size, makes a meaningful difference for our children. Your generosity helps us provide enriching experiences and resources that might otherwise be out of reach.\n\nDonate today: {{donate_link}}\n\nThank you for being part of our community!\n\nWith gratitude,\n{{organization_name}}",
+        body: "Hi {{first_name}},\n\nWe're reaching out to ask for your support with {{event_name}}.\n\nHere is how we plan to use the funds:\n{{fund_allocation}}\n\nEvery donation, no matter the size, makes a meaningful difference for our children. Your generosity helps us provide enriching experiences and resources that might otherwise be out of reach.\n\nDonate today: {{donate_link}}\n\nThank you for being part of our community!\n\nWith gratitude,\n{{organization_name}}",
     },
     {
         id: "donation_thankyou",

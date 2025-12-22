@@ -151,29 +151,39 @@ export default function NewEmailCampaignPage() {
     // Fundraiser/Event variables
     if (fundraiser) {
       result = result.replace(/\{\{event_name\}\}/g, fundraiser.name || "");
-      result = result.replace(/\{\{event_start_date\}\}/g,
-        fundraiser.start_date ? new Date(fundraiser.start_date).toLocaleDateString('en-US', {
+
+      const formatDate = (dateString) => {
+        if (!dateString) return "";
+        return new Date(dateString).toLocaleDateString('en-US', {
           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        }) : ""
-      );
-      result = result.replace(/\{\{event_end_date\}\}/g,
-        fundraiser.end_date ? new Date(fundraiser.end_date).toLocaleDateString('en-US', {
-          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        }) : ""
-      );
-      // Legacy support for {{event_date}}
-      result = result.replace(/\{\{event_date\}\}/g,
-        fundraiser.start_date ? new Date(fundraiser.start_date).toLocaleDateString('en-US', {
-          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        }) : ""
-      );
+        });
+      };
+
+      result = result.replace(/\{\{event_start_date\}\}/g, formatDate(fundraiser.start_date));
+      result = result.replace(/\{\{event_end_date\}\}/g, formatDate(fundraiser.end_date));
+      result = result.replace(/\{\{event_date\}\}/g, formatDate(fundraiser.start_date)); // Legacy
+
       result = result.replace(/\{\{event_location\}\}/g, fundraiser.location || "TBD");
-      result = result.replace(/\{\{ticket_price\}\}/g, "50");
+      result = result.replace(/\{\{ticket_price\}\}/g, fundraiser.ticket_price || "0");
 
-      const exampleAllocation = `Karate Class: 40%\n████████░░░░░░░░░░░░\n\nDance Class: 60%\n████████████░░░░░░░░`;
-      result = result.replace(/\{\{fund_allocation\}\}/g, exampleAllocation);
+      // Dynamic Fund Allocation Visualization
+      let allocationText = "";
+      if (fundraiser.fund_allocation && fundraiser.fund_allocation.length > 0) {
+        allocationText = fundraiser.fund_allocation.map(item => {
+          const percentage = item.percentage || 0;
+          const bars = Math.round(percentage / 5); // 20 chars = 100%
+          const progressBar = "█".repeat(bars) + "░".repeat(20 - bars);
+          return `${item.category}: ${percentage}%\n${progressBar}`;
+        }).join("\n\n");
+      } else {
+        // Default if no allocation set
+        const progressBar = "█".repeat(20);
+        allocationText = `General Fund: 100%\n${progressBar}`;
+      }
+      result = result.replace(/\{\{fund_allocation\}\}/g, allocationText);
 
-      const publicUrl = `https://www.kindercause.com/sunshine-daycare/spring-gala-2024`;
+      // Links (In preview, these are dummy links, or we can construct the real one)
+      const publicUrl = `${window.location.origin}/${organization?.slug || "org"}/${fundraiser.slug || "event"}`;
       result = result.replace(/\{\{purchase_link\}\}/g, publicUrl);
       result = result.replace(/\{\{donate_link\}\}/g, publicUrl);
     }
