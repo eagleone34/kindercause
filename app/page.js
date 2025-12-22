@@ -13,12 +13,15 @@ const BookDemoModal = dynamic(() => import("@/components/BookDemoModal"), {
   ssr: false,
 });
 
+import { renderSchemaTags } from "@/libs/seo";
+
 export default function Page() {
   const { data: session, status } = useSession();
   const [isDemoOpen, setIsDemoOpen] = useState(false);
 
   return (
     <>
+      {renderSchemaTags()}
       {/* Demo Booking Modal - Only rendered when opened */}
       {isDemoOpen && (
         <BookDemoModal
