@@ -146,20 +146,32 @@ export default function SettingsPage() {
 
     const handleBilling = async () => {
         try {
-            const { url } = await apiClient.post("/stripe/create-portal", {
+            toast("Opening billing portal...", { icon: "💳" });
+            const { url, error } = await apiClient.post("/stripe/create-portal", {
                 returnUrl: window.location.href,
             });
-            window.location.href = url;
+
+            if (error) {
+                toast.error(error);
+                return;
+            }
+
+            if (url) {
+                window.location.href = url;
+            } else {
+                toast.error("Could not create billing portal session");
+            }
         } catch (e) {
-            // apiClient already shows toast errors automatically
             console.error(e);
 
-            // If user has no billing account (no execution of checkout yet), redirect to pricing
+            // Handle specific known errors
             if (e.message?.includes("You don't have a billing account yet")) {
                 toast("Redirecting to subscription plans...", { icon: "💳" });
                 setTimeout(() => {
                     window.location.href = "/#pricing";
                 }, 1500);
+            } else {
+                toast.error(e.message || "Failed to load billing portal");
             }
         }
     };
@@ -482,9 +494,20 @@ export default function SettingsPage() {
                                         try {
                                             const res = await fetch("/api/stripe/connect", { method: "POST" });
                                             const data = await res.json();
-                                            if (data.url) window.location.href = data.url;
-                                            else toast.error("Failed to start connection");
-                                        } catch (e) { toast.error("Error connecting"); }
+
+                                            if (!res.ok) {
+                                                throw new Error(data.error || "Failed to start connection");
+                                            }
+
+                                            if (data.url) {
+                                                window.location.href = data.url;
+                                            } else {
+                                                toast.error("No URL returned from Stripe");
+                                            }
+                                        } catch (e) {
+                                            console.error(e);
+                                            toast.error(e.message || "Error connecting");
+                                        }
                                     }}
                                     className="btn btn-primary"
                                 >
