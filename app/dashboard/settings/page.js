@@ -587,6 +587,38 @@ export default function SettingsPage() {
                     </button>
                 </div>
             </form>
+
+            <div className="divider my-10"></div>
+
+            {/* Danger Zone */}
+            <div className="bg-red-50 p-8 rounded-xl border border-red-200">
+                <h2 className="text-xl font-bold text-red-700 mb-2">Danger Zone</h2>
+                <p className="text-red-600/80 mb-6 text-sm">
+                    Permanently delete your account and all associated data. This action cannot be undone.
+                </p>
+                <button
+                    type="button"
+                    onClick={async () => {
+                        if (confirm("Are you absolutely sure? This will delete your account, subscriptions, and all data permenantly.")) {
+                            const toastId = toast.loading("Deleting account...");
+                            try {
+                                const res = await fetch("/api/auth/delete-account", { method: "DELETE" });
+                                if (res.ok) {
+                                    toast.success("Account deleted", { id: toastId });
+                                    window.location.href = "/";
+                                } else {
+                                    throw new Error("Failed to delete");
+                                }
+                            } catch (e) {
+                                toast.error("Could not delete account", { id: toastId });
+                            }
+                        }
+                    }}
+                    className="btn btn-error btn-outline"
+                >
+                    Delete Account
+                </button>
+            </div>
         </div>
     );
 }
