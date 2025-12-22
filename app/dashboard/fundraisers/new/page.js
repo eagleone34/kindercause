@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -31,10 +31,6 @@ export default function NewFundraiserPage() {
     fund_allocation: [], // Array of { category: "Karate", percentage: 40 }
   });
 
-  useState(() => {
-    fetchOrgCategories();
-  }, []);
-
   const fetchOrgCategories = async () => {
     try {
       const res = await fetch("/api/organization");
@@ -48,6 +44,10 @@ export default function NewFundraiserPage() {
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    fetchOrgCategories();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
