@@ -60,19 +60,14 @@ export const createCheckout = async ({
 
 // This is used to create Customer Portal sessions, so users can manage their subscriptions (payment methods, cancel, etc..)
 export const createCustomerPortal = async ({ customerId, returnUrl }) => {
-  try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: returnUrl,
-    });
+  const portalSession = await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: returnUrl,
+  });
 
-    return portalSession.url;
-  } catch (e) {
-    console.error(e);
-    return null;
-  }
+  return portalSession.url;
 };
 
 // This is used to get the uesr checkout session and populate the data so we get the planId the user subscribed to
