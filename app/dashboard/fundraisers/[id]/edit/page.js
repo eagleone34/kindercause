@@ -134,11 +134,18 @@ export default function EditFundraiserPage() {
 
         setIsSaving(true);
 
+        const payload = {
+            ...formData,
+            ticket_price: formData.ticket_price === "" ? 0 : parseFloat(formData.ticket_price),
+            capacity: formData.capacity === "" ? null : parseInt(formData.capacity),
+            goal_amount: formData.goal_amount === "" ? null : parseFloat(formData.goal_amount),
+        };
+
         try {
             const res = await fetch(`/api/fundraisers/${params.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) {
